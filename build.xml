@@ -15,24 +15,30 @@
  You should have received a copy of the GNU General Public License
  along with QuizReader.  If not, see <http://www.gnu.org/licenses/>.
  -->
-<project name="project" default="default">
-   
-	<target name="default" depends="makejs,makecss" description="description">       
-    </target>
+<project name="project" default="makeall">
 
-     <target name="makejs">
-     	  <concat destfile="qr.js">     	      
-     	    <fileset dir="lib/jquery/js" includes="jquery.min.js"/>
-     	    <fileset dir="lib/jquery/js" includes="jquery-ui-custom.min.js"/>
-     	    <fileset dir="src" includes="*.js"/>
-     	  </concat>     	           	
-    </target>
+	<target name="makejs">
+		<concat destfile="qr.js">
+			<fileset dir="lib/jquery/js" includes="jquery.min.js" />
+			<fileset dir="src" includes="*.js" excludes="test*.js" />
+		</concat>
+	</target>
 
-    <target name="makecss">
-    	  <concat destfile="qr.css">     	      
-    	    <fileset dir="lib/jquery/css" includes="*.css"/>
-    	    <fileset dir="src" includes="*.css"/>
-    	  </concat>     	           	
-   </target>
+	<target name="makecss">
+		<concat destfile="qr.css">
+			<fileset dir="src" includes="*.css" />
+		</concat>
+	</target>
 
+	<target name="makeall" depends="makejs,makecss">
+	</target>
+		
+	<target name="deploy-android" depends="makeall">
+		<property name="android.dir" location="../QuizReaderAndroid" />
+		<copy file="qr.js" todir="${android.dir}/assets" />
+		<copy file="qr.css" todir="${android.dir}/assets" />
+		<copy todir="${android.dir}/assets/templates">
+			<fileset dir="src/templates" />
+		</copy>
+	</target>
 </project>

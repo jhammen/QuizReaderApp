@@ -31,5 +31,5 @@ qr.getQuizLevel = function(word) {
 };
 
 qr.getEntry = function(word) {
-	return { foo: "faa" };
+	return "{ def: 'here is the definition' }";
 };

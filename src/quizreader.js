@@ -24,98 +24,86 @@ $(document).ready(function() {
 	// create dialog div
 	var quizDiv = $("<div/>").appendTo("body");
 
-	// unhide up to just before the correct paragraph
-	var paragraph = RegExp("[?&]paragraph=([^&]*)").exec(window.location.search)[1];
-	for ( var i = 1; i < paragraph; i++) {
-		$("p:nth-of-type(" + i + ")").show();
-	}
+	// parse paragraph from url
+	var paragraph = /[?&]paragraph=([^&]*)/.exec(window.location.search)[1];
 
 	function currentParagraph() {
 		return $("p:nth-of-type(" + paragraph + ")");
 	}
 
-	// add "more" button + handler: show quiz, expose next paragraph
-	var moreButton = $("<button>More...</button>").button().appendTo("body");
+	// add text "more" button + handler
+	var moreButton = $("<button>More...</button>").appendTo("#content").show();
 	moreButton.click(function() {
 		paragraph++;
 		if (currentParagraph().length > 0) {
-			showWords();
+			showDefinitions();
 		} else {
 			qr.finish();
 		}
 	});
 
-	
 	var wordMap = {};
 
-	showWords();
-
-	function showWords() {
-		// show loading dialog
-		quizDiv.load("showlist.html", function() {
-			quizDiv.dialog({
-				modal : true,
-				// dialogClass: "no-close"
-				buttons : [ {
-					text : "OK",
-					click : function() {
-						$(this).dialog("close");
-					}
-				} ],
-				close : function(event, ui) {
-					showDefinitions();
-				}
-			});
-			// find quizwords
-			wordMap = {};
-			$("p:nth-of-type(" + paragraph + ") a").each(function(index) {
-				var word = $(this).text();
-				if (!wordMap[word]) {
-					wordMap[word] = qr.getQuizLevel(word);
-				}
-			});
-			for ( var key in wordMap) {
-				if (wordMap[key] < 3) {
-					$("<li>" + key + "</li>").appendTo("#loadingList");
-				}
-			}
-		});
-	}
+	showDefinitions();
 
 	function showDefinitions() {
-		var words = Object.keys(wordMap);
-		words.sort();
-		quizDiv.load("showdef.html", function() {
-			$("#nextDef").button().click(function() {
+		moreButton.hide();
+		quizDiv.show();
+		// grab all words for the current paragraph
+		wordMap = {};
+		$("p:nth-of-type(" + paragraph + ") a").each(function(index) {
+			var word = $(this).text();
+			if (!wordMap[word]) {
+				wordMap[word] = qr.getQuizLevel(word);
+			}
+		});
+		// filter words with low quiz level
+		var words = Object.keys(wordMap).filter(function(element) {
+			return wordMap[element] < 3;
+		});		
+		// show definitions one at a time
+		quizDiv.load("templates/showdef.html", function() {
+			showDefinition(words.pop());
+			$("#nextDef").click(function() {
 				var word = words.pop();
-				$("#word").text(word);
-				$("#def").text(JSON.stringify(qr.getEntry(word)));
-			});
-			quizDiv.dialog({
-				modal : true,
-				buttons : [],
-				// dialogClass: "no-close"
-				close : function(event, ui) {
+				if (word) {
+					showDefinition(word);
+				} else {
 					showQuiz();
-				}
+				}				
 			});
 		});
+	}
+	
+	function showDefinition(word) {		
+		if (word) {
+			$("#word").text(word);
+			$("#def").text(qr.getEntry(word));
+		}
 	}
 
 	function showQuiz() {
-		quizDiv.load("quizform.html", function() {
-			$("#nextQuiz").button().click(function() {
-				//$("#word").text(words.pop());
-			});
-			quizDiv.dialog({
-				modal : true,
-				buttons : [],
-				// dialogClass: "no-close"
-				close : function(event, ui) {
-					currentParagraph().show();
-				}
+		quizDiv.load("templates/quizform.html", function() {
+			$("#nextQuiz").click(function() {
+				showText();
+				return false;
 			});
 		});
+	}
+
+	function showText() {
+		// unhide up to the current paragraph
+		var counter = 0;
+		$("#content > *").each(function(index) {
+			$(this).show();
+			if ($(this).is('p')) {
+				if (++counter == paragraph) {
+					return false;
+				}
+			}
+		});
+		quizDiv.hide();
+		moreButton.show();
 	}
 
 });
