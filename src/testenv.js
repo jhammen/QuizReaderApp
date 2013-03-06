@@ -26,10 +26,7 @@ qr.finish = function() {
 	window.location = "about:blank";
 };
 
-qr.getQuizLevel = function(word) {
-	return Math.floor(Math.random()*11);
-};
-
 qr.getEntry = function(word) {
-	return "{ def: 'here is the definition' }";
+	var level = Math.floor(Math.random()*11);
+	return "{ \"defs\": [{\"text\" : \"here is the definition\"}], \"level\": " + level + "}";
 };
