@@ -21,35 +21,31 @@ $(document).ready(function() {
 		qr.showDef($(this).text());
 	});
 
-	// create dialog div
+	// create div to show definitions/quizzes
 	var quizDiv = $("<div/>").appendTo("body");
 
 	// parse paragraph from url
 	var paragraph = /[?&]paragraph=([^&]*)/.exec(window.location.search)[1];
 
-	function currentParagraph() {
-		return $("p:nth-of-type(" + paragraph + ")");
-	}
-
 	// add text "more" button + handler
 	var moreButton = $("<button>More...</button>").appendTo("#content").show();
 	moreButton.click(function() {
 		paragraph++;
-		if (currentParagraph().length > 0) {
+		// show definitions if paragraph exists
+		if ($("p:nth-of-type(" + paragraph + ")").length > 0) {
 			showDefinitions();
 		} else {
 			qr.finish();
 		}
 	});
 
+	// --- show definitions
+
 	showDefinitions();
 
-	var entry = {};
-
 	function showDefinitions() {
-
 		moreButton.hide();
-		quizDiv.show();
+
 		// grab all words for the current paragraph
 		var wordMap = {};
 		$("p:nth-of-type(" + paragraph + ") a").each(function(index) {
@@ -57,43 +53,45 @@ $(document).ready(function() {
 		});
 		var wordList = Object.keys(wordMap);
 
+		var entries = [];
+
+		// load and show definition template
 		quizDiv.load("templates/showdef.html", function() {
+			quizDiv.show();
 			// show first definition
-			showNextDefinition(wordList);
+			showNextDefinition();
 			// show next definition on button click
 			$("#nextDef").click(function() {
-				showNextDefinition(wordList);
+				showNextDefinition();
 			});
 		});
-	}
 
-	function showNextDefinition(wordList) {
-		var word = getNextQuizWord(wordList);
-		if (word) {
-			$("#word").text(word);
-			var defs = entry[word].defs;
+		function showNextDefinition() {
+			while (entries.length == 0) {
+				var word = wordList.pop();
+				if (!word) { // done
+					showQuiz();
+					return;
+				}
+				var arr = JSON.parse(qr.getEntry(word));
+				for ( var i = 0; i < arr.length; i++) {
+					if (arr[i].level == 0) {
+						entries.push(arr[i]);
+					}
+				}
+			}
+			var ent = entries.pop();
+			$("#word").text(ent.word);
 			$("#defList").empty();
-			for(var i = 0; i < defs.length; i++) {
-				$("<li>" + defs[i].text + "</li>").appendTo("#defList");
+			for ( var i = 0; i < ent.defs.length; i++) {
+				var def = ent.defs[i];
+				$("<li>" + def.text + "</li>").appendTo("#defList");
 			}
-		} else {
-			showQuiz();
+			qr.updateQuizLevel(ent.word, 1);
 		}
 	}
 
-	function getNextQuizWord(wordList) {
-		var word = wordList.pop();
-		while (word) {
-			var ent = JSON.parse(qr.getEntry(word));
-			entry[word] = ent;
-			if (ent.level == 0) {
-				// look out for roots!!!
-				return word;
-			}
-			word = wordList.pop();
-		}
-		return null;
-	}
+	// --- quiz
 
 	function showQuiz() {
 		quizDiv.load("templates/quizform.html", function() {
@@ -116,6 +114,7 @@ $(document).ready(function() {
 			}
 		});
 		quizDiv.hide();
+		qr.updateParagraph(paragraph);
 		moreButton.show();
 	}
 

@@ -28,5 +28,15 @@ qr.finish = function() {
 
 qr.getEntry = function(word) {
 	var level = Math.floor(Math.random()*11);
-	return "{ \"defs\": [{\"text\" : \"here is the definition\"}], \"level\": " + level + "}";
+	var root = "";
+	if(Math.random()*11 < 3) {
+		root = ",\"root\":\"whut??\"";
+	}
+	var ent =  "{ \"word\": \"" + word + "\", \"defs\": [{\"text\" : \"here is the definition\"}], \"level\": " + level + root + "}";
+	var ent2 =  "{ \"word\": \"" + "root" + "\", \"defs\": [{\"text\" : \"here is the definition\"}], \"level\": " + level + root + "}";
+	return "[" + ent + "," + ent2 + "]";
 };
+
+qr.updateQuizLevel = function(word) {}
+
+qr.updateParagraph = function(word) {}
