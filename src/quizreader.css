@@ -4,3 +4,11 @@
 #content > * { display: none; }
 
 #word { font-weight: bold; }
+
+#quizWord { font-weight: bold; }
+
+#nextQuiz { display: none; }
+
+.correct { background-color: green; }
+
+.incorrect { background-color: red; }

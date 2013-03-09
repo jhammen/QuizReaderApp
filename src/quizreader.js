@@ -16,9 +16,13 @@
  */
 $(document).ready(function() {
 
+	var DONT_QUIZ_ABOVE = 2;
+
 	// set up clickable words
 	$("a").click(function() {
-		qr.showDef($(this).text());
+		var word = $(this).text();
+		qr.showDef(word);
+		updateLevel(word, -1);
 	});
 
 	// create div to show definitions/quizzes
@@ -39,6 +43,13 @@ $(document).ready(function() {
 		}
 	});
 
+	var levelCache = {};
+
+	function updateLevel(word, delta) {
+		levelCache[word] = levelCache[word] + delta;
+		qr.updateQuizLevel(word, levelCache[word]);
+	}
+
 	// --- show definitions
 
 	showDefinitions();
@@ -53,7 +64,8 @@ $(document).ready(function() {
 		});
 		var wordList = Object.keys(wordMap);
 
-		var entries = [];
+		var defEntries = [];
+		var quizMap = {};
 
 		// load and show definition template
 		quizDiv.load("templates/showdef.html", function() {
@@ -67,39 +79,130 @@ $(document).ready(function() {
 		});
 
 		function showNextDefinition() {
-			while (entries.length == 0) {
+			while (defEntries.length == 0) {
 				var word = wordList.pop();
 				if (!word) { // done
-					showQuiz();
+					showQuiz(quizMap);
 					return;
 				}
-				var arr = JSON.parse(qr.getEntry(word));
-				for ( var i = 0; i < arr.length; i++) {
-					if (arr[i].level == 0) {
-						entries.push(arr[i]);
+				if (!levelCache[word] || levelCache[word] < DONT_QUIZ_ABOVE) {
+					var arr = JSON.parse(qr.getEntries(word));
+					for ( var i = 0; i < arr.length; i++) {
+						levelCache[arr[i].word] = arr[i].level;
+						if (arr[i].level < DONT_QUIZ_ABOVE && !quizMap[arr[i].word]) {
+							quizMap[arr[i].word] = arr[i];
+						}
+						if (arr[i].level == 0) {
+							defEntries.push(arr[i]);
+						}
 					}
 				}
 			}
-			var ent = entries.pop();
+			var ent = defEntries.pop();
 			$("#word").text(ent.word);
 			$("#defList").empty();
 			for ( var i = 0; i < ent.defs.length; i++) {
 				var def = ent.defs[i];
 				$("<li>" + def.text + "</li>").appendTo("#defList");
 			}
-			qr.updateQuizLevel(ent.word, 1);
+			updateLevel(ent.word, 1);
 		}
 	}
 
 	// --- quiz
 
-	function showQuiz() {
-		quizDiv.load("templates/quizform.html", function() {
-			$("#nextQuiz").click(function() {
+	function showQuiz(quizMap) {
+
+		var correctOption = pickNextOption();
+
+		function pickNextOption() {
+			return "option" + (Math.floor(Math.random() * 3) + 1);
+		}
+
+		var quizEntries = [];
+		for ( var key in quizMap) {
+			quizEntries.push(quizMap[key]);
+		}
+		quizEntries.sort(randomSort);
+
+		function showNextQuiz() {
+			if (quizEntries.length == 0) {
 				showText();
 				return false;
+			}
+			correctOption = pickNextOption();
+			// reset form
+			$("label").removeClass("correct").removeClass("incorrect");
+			$("input:radio").removeAttr('checked');
+			$("input:radio").removeAttr('disabled');
+			$("#nextQuiz").hide();
+			// show word and set definitions
+			var ent = quizEntries[quizEntries.length - 1];
+			$("#quizWord").text(ent.word);
+			// clear label text and add back new entries
+			$("label").text("");
+			$("label[for='" + correctOption + "']").text(entryString(ent));
+			var similarEntry = JSON.parse(qr.getSimilarEntry(ent.word));
+			var unrelatedEntry = JSON.parse(qr.getUnrelatedDefinition(ent.word, similarEntry.word));
+			if (Math.random() > 0.5) {
+				emptyLabel().text(entryString(unrelatedEntry));
+				emptyLabel().text(entryString(similarEntry));
+			} else {
+				emptyLabel().text(entryString(similarEntry));
+				emptyLabel().text(entryString(unrelatedEntry));
+			}
+		}
+
+		function entryString(ent) {
+			var defString = "";
+			for ( var i = 0; i < ent.defs.length; i++) {
+				defString += (i == 0) ? "" : "; ";
+				defString += ent.defs[i].text;
+			}
+			return defString;
+		}
+
+		function emptyLabel() {
+			for ( var i = 1; i <= 3; i++) {
+				var label = $("label[for='option" + i + "']");
+				if (label.text().length == 0) {
+					return label;
+				}
+			}
+		}
+
+		quizDiv.load("templates/quizform.html", function() {
+
+			showNextQuiz();
+
+			$("#nextQuiz").click(function() {
+				showNextQuiz();
+				return false;
+			});
+
+			// on radio click - show right and wrong answers
+			$("input:radio").click(function(e) {
+				$("input:radio").attr('disabled', 'disabled');
+				$("label[for='" + correctOption + "']").addClass("correct");
+				if (this.id != correctOption) {
+					// label bad answer incorrect
+					$("label[for='" + this.id + "']").addClass("incorrect");
+					// reshuffle
+					quizEntries.sort(randomSort);
+					// show OK button
+					$("#nextQuiz").show();
+				} else { // auto-increment to next quiz
+					quizEntries.pop();
+					setTimeout(showNextQuiz, 1000);
+					updateLevel($("#quizWord").text(), 1);
+				}
 			});
 		});
+
+		function randomSort(a, b) {
+			return Math.random() > 0.5;
+		}
+
 	}
 
 	function showText() {

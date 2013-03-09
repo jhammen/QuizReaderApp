@@ -14,9 +14,16 @@
  You should have received a copy of the GNU General Public License
  along with QuizReader.  If not, see <http://www.gnu.org/licenses/>.
  -->
-<form>
-<input type="radio"/>One<br/>
-<input type="radio"/>Two
+<hr/>
+Choose the correct definition for <span id="quizWord"></span>:
 <br/>
-<button id="nextQuiz">OK</button>
+<br/>
+<form id="quizForm">
+	<input id="option1" type="radio" name="quiz" /><label for="option1"></label>
+	<hr />
+	<input id="option2" type="radio" name="quiz" /><label for="option2"></label>
+	<hr />
+	<input id="option3" type="radio" name="quiz" /><label for="option3"></label><br />
+	<br />
+	<button id="nextQuiz">OK</button>
 </form>

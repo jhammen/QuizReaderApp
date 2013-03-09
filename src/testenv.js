@@ -26,17 +26,42 @@ qr.finish = function() {
 	window.location = "about:blank";
 };
 
-qr.getEntry = function(word) {
-	var level = Math.floor(Math.random()*11);
-	var root = "";
-	if(Math.random()*11 < 3) {
-		root = ",\"root\":\"whut??\"";
+var levels = {};
+
+levels['root'] = 0;
+
+qr.getEntries = function(word) {
+	var level = Math.floor(Math.random() * 11);
+	if (levels[word]) {
+		level = levels[word];
+	} else {
+		levels[word] = level;
 	}
-	var ent =  "{ \"word\": \"" + word + "\", \"defs\": [{\"text\" : \"here is the definition\"}], \"level\": " + level + root + "}";
-	var ent2 =  "{ \"word\": \"" + "root" + "\", \"defs\": [{\"text\" : \"here is the definition\"}], \"level\": " + level + root + "}";
-	return "[" + ent + "," + ent2 + "]";
+	var root = "";
+	var ent2 = "";
+	if (Math.random() * 11 < 3) {
+		root = ",\"root\":\"root\"";
+		ent2 = ", { \"word\": \"root\", \"defs\": [{\"text\" : \"here is the root definition\"}], \"level\": " + levels['root'] + "}";
+	}
+	var ent = "{ \"word\": \"" + word + "\", \"defs\": [{\"text\" : \"here is the definition for " + word + "\"}], \"level\": " + level + root + "}";
+	return "[" + ent + ent2 + "]";
 };
 
-qr.updateQuizLevel = function(word) {}
+qr.updateQuizLevel = function(word, value) {
+	levels[word] = value;
+	console.log(word + " level updated to " + levels[word]);
+};
 
-qr.updateParagraph = function(word) {}
+qr.getSimilarEntry = function(word) {
+	return "{ \"word\": \"similar\", \"defs\": [{\"text\" : \"here is the definition for a similar word to " + word + "\"}]}";	
+};
+
+qr.getUnrelatedDefinition = function(word1, word2) {
+	return "{ \"word\": \"similar\", \"defs\": [{\"text\" : \"here is the definition for an unrelated word \"}]}";
+	
+};
+
+qr.updateParagraph = function(word) {
+}
+
+
