@@ -88,10 +88,11 @@ $(document).ready(function() {
 		quizDiv.load("templates/showdef.html", function() {
 			quizDiv.show();
 			// show first definition
-			showNextDefinition();
+			var defWord = showNextDefinition();
 			// show next definition on button click
 			$("#nextDef").click(function() {
-				showNextDefinition();
+				updateLevel(defWord, 1);
+				defWord = showNextDefinition();
 			});
 		});
 
@@ -122,7 +123,7 @@ $(document).ready(function() {
 				var def = ent.defs[i];
 				$("<li>" + def.text + "</li>").appendTo("#defList");
 			}
-			updateLevel(ent.word, 1);
+			return ent.word;
 		}
 	}
 
