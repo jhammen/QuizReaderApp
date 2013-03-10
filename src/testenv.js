@@ -17,10 +17,6 @@
 
 var qr = {};
 
-qr.showDef = function(word) {
-	alert('definition for ' + word);
-};
-
 qr.endPage = function() {
 	alert('done');
 	window.location = "about:blank";
@@ -62,6 +58,6 @@ qr.getUnrelatedDefinition = function(word1, word2) {
 };
 
 qr.updateParagraph = function(word) {
-}
+};
 
 

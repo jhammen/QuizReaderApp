@@ -18,15 +18,20 @@ $(document).ready(function() {
 
 	var DONT_QUIZ_ABOVE = 2;
 
+	// create divs to show definitions/quizzes
+	var defDiv = $("<div/>").appendTo("body");
+	var quizDiv = $("<div/>").appendTo("body");  
+
 	// set up clickable words
 	$("a").click(function() {
-		var word = $(this).text();
-		qr.showDef(word);
-		updateLevel(word, -1);
+		if (quizDiv.is(':hidden')) {
+			var word = $(this).text();
+			showSingleDefinition(word);
+			updateLevel(word, -1);
+		} else {
+			alert("cannot show definitions while in quiz mode");
+		}
 	});
-
-	// create div to show definitions/quizzes
-	var quizDiv = $("<div/>").appendTo("body");
 
 	// parse paragraph from url and unhide up to that point
 	var paragraph = parseInt(/[?&]paragraph=([^&]*)/.exec(window.location.search)[1]);
@@ -70,6 +75,15 @@ $(document).ready(function() {
 	// --- show definitions
 
 	showDefinitions();
+
+	function showDef(ent) {
+		$("#word").text(ent.word);
+		$("#defList").empty();
+		for ( var i = 0; i < ent.defs.length; i++) {
+			var def = ent.defs[i];
+			$("<li>" + def.text + "</li>").appendTo("#defList");
+		}
+	}
 
 	function showDefinitions() {
 		moreButton.hide();
@@ -117,14 +131,23 @@ $(document).ready(function() {
 				}
 			}
 			var ent = defEntries.pop();
-			$("#word").text(ent.word);
-			$("#defList").empty();
-			for ( var i = 0; i < ent.defs.length; i++) {
-				var def = ent.defs[i];
-				$("<li>" + def.text + "</li>").appendTo("#defList");
-			}
+			showDef(ent);
 			return ent.word;
 		}
+	}
+
+	function showSingleDefinition(word) {
+		moreButton.hide();
+		// get entries
+		var arr = JSON.parse(qr.getEntries(word));
+		defDiv.load("templates/showdef.html", function() {
+			showDef(arr[0]);
+			$("#nextDef").click(function() {
+				defDiv.empty();
+				moreButton.show();
+			});
+		});
+
 	}
 
 	// --- quiz
