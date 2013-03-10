@@ -17,11 +17,11 @@
 
 var qr = {};
 
-qr.showDef = function() {
-	alert('showDef');
+qr.showDef = function(word) {
+	alert('definition for ' + word);
 };
 
-qr.finish = function() {
+qr.endPage = function() {
 	alert('done');
 	window.location = "about:blank";
 };

@@ -28,8 +28,9 @@ $(document).ready(function() {
 	// create div to show definitions/quizzes
 	var quizDiv = $("<div/>").appendTo("body");
 
-	// parse paragraph from url
-	var paragraph = /[?&]paragraph=([^&]*)/.exec(window.location.search)[1];
+	// parse paragraph from url and unhide up to that point
+	var paragraph = parseInt(/[?&]paragraph=([^&]*)/.exec(window.location.search)[1]);
+	unhideToParagraph(paragraph);
 
 	// add text "more" button + handler
 	var moreButton = $("<button>More...</button>").appendTo("#content").show();
@@ -37,17 +38,33 @@ $(document).ready(function() {
 		paragraph++;
 		// show definitions if paragraph exists
 		if ($("p:nth-of-type(" + paragraph + ")").length > 0) {
+			qr.updateParagraph(paragraph);
 			showDefinitions();
 		} else {
-			qr.finish();
+			qr.endPage();
 		}
 	});
 
 	var levelCache = {};
 
 	function updateLevel(word, delta) {
-		levelCache[word] = levelCache[word] + delta;
-		qr.updateQuizLevel(word, levelCache[word]);
+		var newValue = levelCache[word] + delta;
+		if (newValue >= 0) {
+			levelCache[word] = newValue;
+			qr.updateQuizLevel(word, levelCache[word]);
+		}
+	}
+
+	function unhideToParagraph(para) {
+		var counter = 0;
+		$("#content > *").each(function(index) {
+			if ($(this).is('p')) {
+				if (++counter == para) {
+					return false;
+				}
+			}
+			$(this).show();
+		});
 	}
 
 	// --- show definitions
@@ -200,24 +217,14 @@ $(document).ready(function() {
 		});
 
 		function randomSort(a, b) {
-			return Math.random() > 0.5;
+			return Math.random() > 0.5 ? -1 : 1;
 		}
 
 	}
 
 	function showText() {
-		// unhide up to the current paragraph
-		var counter = 0;
-		$("#content > *").each(function(index) {
-			$(this).show();
-			if ($(this).is('p')) {
-				if (++counter == paragraph) {
-					return false;
-				}
-			}
-		});
+		unhideToParagraph(paragraph + 1);
 		quizDiv.hide();
-		qr.updateParagraph(paragraph);
 		moreButton.show();
 	}
 
