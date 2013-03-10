@@ -16,11 +16,12 @@
  */
 $(document).ready(function() {
 
-	var DONT_QUIZ_ABOVE = 2;
+	var DONT_QUIZ_ABOVE = 5;
+	var MIN_QUIZ_ENTRIES = 3;
 
 	// create divs to show definitions/quizzes
 	var defDiv = $("<div/>").appendTo("body");
-	var quizDiv = $("<div/>").appendTo("body");  
+	var quizDiv = $("<div/>").appendTo("body");
 
 	// set up clickable words
 	$("a").click(function() {
@@ -160,11 +161,50 @@ $(document).ready(function() {
 			return "option" + (Math.floor(Math.random() * 3) + 1);
 		}
 
-		var quizEntries = [];
+		var allEntries = [];
 		for ( var key in quizMap) {
-			quizEntries.push(quizMap[key]);
+			allEntries.push(quizMap[key]);
 		}
+
+		var quizEntries = [];
+		var targetLevel = 0;
+		while (quizEntries.length < MIN_QUIZ_ENTRIES && targetLevel < DONT_QUIZ_ABOVE) {
+			quizEntries = quizEntries.concat(allEntries.filter(function(elem) {
+				return elem.level == targetLevel;
+			}));
+			targetLevel++;
+		}
+
 		quizEntries.sort(randomSort);
+
+		quizDiv.load("templates/quizform.html", function() {
+
+			showNextQuiz();
+
+			$("#nextQuiz").click(function() {
+				showNextQuiz();
+				return false;
+			});
+
+			// on radio click - show right and wrong answers
+			$("input:radio").click(function(e) {
+				$("label[for='" + correctOption + "']").addClass("correct");
+				$("input:radio").attr('disabled', 'disabled');
+				if (this.id != correctOption) {
+					// label bad answer incorrect
+					$("label[for='" + this.id + "']").addClass("incorrect");
+					// reshuffle
+					quizEntries.sort(randomSort);
+					// show OK button
+					$("#nextQuiz").show();
+				} else {
+					quizEntries.pop();
+					setTimeout(updateWordLevel, 10);
+					// auto-increment to next quiz
+					setTimeout(showNextQuiz, 1000);
+				}
+			});
+		});
 
 		function showNextQuiz() {
 			if (quizEntries.length == 0) {
@@ -211,35 +251,6 @@ $(document).ready(function() {
 				}
 			}
 		}
-
-		quizDiv.load("templates/quizform.html", function() {
-
-			showNextQuiz();
-
-			$("#nextQuiz").click(function() {
-				showNextQuiz();
-				return false;
-			});
-
-			// on radio click - show right and wrong answers
-			$("input:radio").click(function(e) {
-				$("label[for='" + correctOption + "']").addClass("correct");
-				$("input:radio").attr('disabled', 'disabled');
-				if (this.id != correctOption) {
-					// label bad answer incorrect
-					$("label[for='" + this.id + "']").addClass("incorrect");
-					// reshuffle
-					quizEntries.sort(randomSort);
-					// show OK button
-					$("#nextQuiz").show();
-				} else {
-					quizEntries.pop();
-					setTimeout(updateWordLevel, 10);
-					// auto-increment to next quiz
-					setTimeout(showNextQuiz, 1000);
-				}
-			});
-		});
 
 		function updateWordLevel() {
 			updateLevel($("#quizWord").text(), 1);
