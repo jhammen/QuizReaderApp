@@ -200,8 +200,8 @@ $(document).ready(function() {
 
 			// on radio click - show right and wrong answers
 			$("input:radio").click(function(e) {
-				$("input:radio").attr('disabled', 'disabled');
 				$("label[for='" + correctOption + "']").addClass("correct");
+				$("input:radio").attr('disabled', 'disabled');
 				if (this.id != correctOption) {
 					// label bad answer incorrect
 					$("label[for='" + this.id + "']").addClass("incorrect");
@@ -209,14 +209,18 @@ $(document).ready(function() {
 					quizEntries.sort(randomSort);
 					// show OK button
 					$("#nextQuiz").show();
-				} else { // auto-increment to next quiz
+				} else {
 					quizEntries.pop();
+					setTimeout(updateWordLevel, 10);
+					// auto-increment to next quiz
 					setTimeout(showNextQuiz, 1000);
-					updateLevel($("#quizWord").text(), 1);
 				}
 			});
 		});
 
+		function updateWordLevel() {
+			updateLevel($("#quizWord").text(), 1);
+		}
 		function randomSort(a, b) {
 			return Math.random() > 0.5 ? -1 : 1;
 		}
