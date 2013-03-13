@@ -22,8 +22,10 @@ $(document).ready(function() {
 	// set up clickable words
 	$("a").click(function() {
 		var word = $(this).text();
-		defWindow.showSingleDefinition(word);
-		updateLevel(word, -1);
+		$("#content").hide();
+		defWindow.showDefinition(word, function() {
+			$("#content").show();
+		});		
 	});
 
 	// parse paragraph from url and unhide up to that point

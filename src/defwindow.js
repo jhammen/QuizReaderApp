@@ -73,21 +73,22 @@ function defwindow(levelCache) {
 		}
 	}
 
-	function showSingleDefinition(word) {
-		moreButton.hide();
+	function showDefinition(word, callback) {
+		div.show();
 		// get entries
 		var arr = JSON.parse(qr.getEntries(word));
-		defDiv.load("templates/showdef.html", function() {
-			showDef(arr[0]);
-			$("#nextDef").click(function() {
-				defDiv.empty();
-				moreButton.show();
-			});
+		showDef(arr[0]);
+		$("#nextDef").unbind('click');
+		$("#nextDef").click(function() {
+			div.hide();
+			levelCache.updateLevel(word, -1);
+			callback();
 		});
 	}
 
 	return {
 		init : init,
+		showDefinition : showDefinition,
 		showDefinitions : showDefinitions
 	};
 }
