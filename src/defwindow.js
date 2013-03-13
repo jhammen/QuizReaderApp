@@ -1,9 +1,8 @@
 var DONT_QUIZ_ABOVE = 5;
-var MIN_QUIZ_ENTRIES = 3;
 
 function defwindow(levelCache) {
 
-	var quizMap = {};
+	var quizMap;
 
 	var div = $("<div id='defDiv'/>").appendTo("body");
 
@@ -13,7 +12,7 @@ function defwindow(levelCache) {
 			var IDEAL_WIDTH = 300;
 			var IDEAL_HEIGHT = 300;
 			var pageWidth = $(window).width();
-			var pageHeight = $(window).height();
+			var pageHeight = window.innerHeight;
 			var width = pageWidth < IDEAL_WIDTH ? pageWidth : IDEAL_WIDTH;
 			var height = pageHeight < IDEAL_HEIGHT ? pageHeight : IDEAL_HEIGHT;
 			div.height(height);
@@ -28,6 +27,7 @@ function defwindow(levelCache) {
 
 	function showDefinitions(wordList, callback) {
 		div.show();
+		quizMap = {};
 		// show first definition
 		var defWord = showNextDefinition(wordList, callback);
 		// show next definition on button click

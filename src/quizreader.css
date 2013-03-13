@@ -2,10 +2,6 @@
 	display: none;
 }
 
-#content>* {
-	display: none;
-}
-
 #word {
 	font-weight: bold;
 }
@@ -36,10 +32,17 @@
 	opacity: 0.9;
 }
 
-#defDiv, #quizDiv {
-	position: absolute;
-	overflow: auto;
+#defDiv,#quizDiv {
+	position: absolute;	
 	background-color: #ffffff;
 	padding: 5px;
 	border: 1px solid blue;
+}
+
+#content>* {
+	display: none;
+}
+
+#content {
+	display: none;
 }

@@ -14,6 +14,9 @@
  You should have received a copy of the GNU General Public License
  along with QuizReader.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+var MIN_QUIZ_ENTRIES = 3;
+
 $(document).ready(function() {
 
 	// set up clickable words
@@ -25,7 +28,7 @@ $(document).ready(function() {
 
 	// parse paragraph from url and unhide up to that point
 	var paragraph = parseInt(/[?&]paragraph=([^&]*)/.exec(window.location.search)[1]);
-	unhideToParagraph(paragraph);
+	//unhideToParagraph(paragraph);
 
 	// add text "more" button + handler
 	var moreButton = $("<button>More...</button>").appendTo("#content").show();
@@ -64,6 +67,7 @@ $(document).ready(function() {
 		var wordList = Object.keys(wordMap);
 		// run definitions window
 		greyDiv.show();
+		$("#content").hide();
 		defWindow.showDefinitions(wordList, function(quizMap) {
 			quizWindow.showQuiz(quizMap, function() {
 				showText();
@@ -84,6 +88,7 @@ $(document).ready(function() {
 	}
 
 	function showText() {
+		$("#content").show();
 		unhideToParagraph(paragraph + 1);
 		greyDiv.hide();
 		moreButton.show();

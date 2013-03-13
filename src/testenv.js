@@ -39,7 +39,11 @@ qr.getEntries = function(word) {
 		root = ",\"root\":\"root\"";
 		ent2 = ", { \"word\": \"root\", \"defs\": [{\"text\" : \"here is the root definition\"}], \"level\": " + levels['root'] + "}";
 	}
-	var ent = "{ \"word\": \"" + word + "\", \"defs\": [{\"text\" : \"here is the definition for " + word + "\"}], \"level\": " + level + root + "}";
+	var extra = "";
+	for(var i = 0; i < 2; i++) {
+		extra = extra + " word" + i;
+	}
+	var ent = "{ \"word\": \"" + word + "\", \"defs\": [{\"text\" : \"" + extra + "here is the definition for " + word + "\"}], \"level\": " + level + root + "}";
 	return "[" + ent + ent2 + "]";
 };
 

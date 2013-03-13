@@ -1,6 +1,6 @@
 function quizwindow(levelCache) {
 
-	var quizEntries = [];
+	var quizEntries;
 	var correctOption;
 
 	var div = $("<div id='quizDiv'/>").appendTo("body");
@@ -16,7 +16,7 @@ function quizwindow(levelCache) {
 			var IDEAL_WIDTH = 300;
 			var IDEAL_HEIGHT = 300;
 			var pageWidth = $(window).width();
-			var pageHeight = $(window).height();
+			var pageHeight = window.innerHeight;
 			var width = pageWidth < IDEAL_WIDTH ? pageWidth : IDEAL_WIDTH;
 			var height = pageHeight < IDEAL_HEIGHT ? pageHeight : IDEAL_HEIGHT;
 			div.height(height);
@@ -41,6 +41,7 @@ function quizwindow(levelCache) {
 			allEntries.push(quizMap[key]);
 		}
 
+		quizEntries = [];
 		var targetLevel = 0;
 		while (quizEntries.length < MIN_QUIZ_ENTRIES && targetLevel < DONT_QUIZ_ABOVE) {
 			quizEntries = quizEntries.concat(allEntries.filter(function(elem) {
