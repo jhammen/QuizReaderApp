@@ -1,14 +1,45 @@
+.no-close .ui-dialog-titlebar-close {
+	display: none;
+}
 
-.no-close .ui-dialog-titlebar-close { display: none; }
+#content>* {
+	display: none;
+}
 
-#content > * { display: none; }
+#word {
+	font-weight: bold;
+}
 
-#word { font-weight: bold; }
+#quizWord {
+	font-weight: bold;
+}
 
-#quizWord { font-weight: bold; }
+#nextQuiz {
+	display: none;
+}
 
-#nextQuiz { display: none; }
+.correct {
+	background-color: green;
+}
 
-.correct { background-color: green; }
+.incorrect {
+	background-color: red;
+}
 
-.incorrect { background-color: red; }
+#greyDiv {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background-color: #777777;
+	opacity: 0.9;
+}
+
+#defDiv, #quizDiv {
+	position: absolute;
+	overflow: auto;
+	background-color: #ffffff;
+	padding: 5px;
+	border: 1px solid blue;
+}
