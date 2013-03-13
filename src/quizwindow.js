@@ -45,6 +45,9 @@ function quizwindow(levelCache) {
 		var targetLevel = 0;
 		while (quizEntries.length < MIN_QUIZ_ENTRIES && targetLevel < DONT_QUIZ_ABOVE) {
 			quizEntries = quizEntries.concat(allEntries.filter(function(elem) {
+				if (isSimpleRoot(elem)) {
+					return false;
+				}
 				return elem.level == targetLevel;
 			}));
 			targetLevel++;
@@ -81,8 +84,24 @@ function quizwindow(levelCache) {
 			}
 		});
 	}
-	
 
+	function isSimpleRoot(ent) {
+		if (ent.defs.length != 1) {
+			return false;
+		}
+		var root = ent.defs[0].root;
+		if (!root) {
+			return false;
+		}
+		var word = ent.word;
+		var smaller = Math.min(word.length, root.length);
+		for ( var i = 0; i < min; i++) {
+			if (word[i] != root[i]) {
+				break;
+			}
+		}
+		return (i / (min * 0.65)) > 1;
+	}
 
 	function showNextQuiz(callback) {
 		if (quizEntries.length == 0) {

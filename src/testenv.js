@@ -40,10 +40,10 @@ qr.getEntries = function(word) {
 		ent2 = ", { \"word\": \"root\", \"defs\": [{\"text\" : \"here is the root definition\"}], \"level\": " + levels['root'] + "}";
 	}
 	var extra = "";
-	for(var i = 0; i < 2; i++) {
+	for ( var i = 0; i < 2; i++) {
 		extra = extra + " word" + i;
 	}
-	var ent = "{ \"word\": \"" + word + "\", \"defs\": [{\"text\" : \"" + extra + "here is the definition for " + word + "\"}], \"level\": " + level + root + "}";
+	var ent = "{ \"word\": \"" + word + "\", \"defs\": [{\"text\" : \"" + extra + "here is the definition for " + word + "\"" + root + "}], \"level\": " + level + "}";
 	return "[" + ent + ent2 + "]";
 };
 
@@ -53,15 +53,13 @@ qr.updateQuizLevel = function(word, value) {
 };
 
 qr.getSimilarEntry = function(word) {
-	return "{ \"word\": \"similar\", \"defs\": [{\"text\" : \"here is the definition for a similar word to " + word + "\"}]}";	
+	return "{ \"word\": \"similar\", \"defs\": [{\"text\" : \"here is the definition for a similar word to " + word + "\"}]}";
 };
 
 qr.getUnrelatedDefinition = function(word1, word2) {
 	return "{ \"word\": \"similar\", \"defs\": [{\"text\" : \"here is the definition for an unrelated word \"}]}";
-	
+
 };
 
 qr.updateParagraph = function(word) {
 };
-
-
