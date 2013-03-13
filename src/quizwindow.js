@@ -94,7 +94,7 @@ function quizwindow(levelCache) {
 			return false;
 		}
 		var word = ent.word;
-		var smaller = Math.min(word.length, root.length);
+		var min = Math.min(word.length, root.length);
 		for ( var i = 0; i < min; i++) {
 			if (word[i] != root[i]) {
 				break;
