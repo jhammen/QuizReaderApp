@@ -36,24 +36,24 @@ function quizwindow(levelCache) {
 
 		correctOption = pickNextOption();
 
-		var allEntries = [];
-		for ( var key in quizMap) {
-			allEntries.push(quizMap[key]);
-		}
-
 		quizEntries = [];
-		var targetLevel = 0;
-		while (quizEntries.length < MIN_QUIZ_ENTRIES && targetLevel < DONT_QUIZ_ABOVE) {
-			quizEntries = quizEntries.concat(allEntries.filter(function(elem) {
-				if (isSimpleRoot(elem)) {
-					return false;
-				}
-				return elem.level == targetLevel;
-			}));
-			targetLevel++;
+		for ( var key in quizMap) {
+			var ent = quizMap[key];
+			if (!isSimpleRoot(ent)) {
+				quizEntries.push(ent);
+			}
 		}
 
+		// shuffle then sort by level
 		quizEntries.sort(randomSort);
+		quizEntries.sort(levelSort);
+
+		// truncate list
+		var i = 0;
+		while (quizEntries[i].level == 0 || i < MIN_QUIZ_ENTRIES) {
+			i++;
+		}
+		quizEntries = quizEntries.slice(0, i);
 
 		showNextQuiz(callback);
 		$("#nextQuiz").unbind('click');
@@ -152,6 +152,16 @@ function quizwindow(levelCache) {
 
 	function randomSort(a, b) {
 		return Math.random() > 0.5 ? -1 : 1;
+	}
+
+	function levelSort(a, b) {
+		if (a.level < b.level) {
+			return -1;
+		}
+		if (a.level > b.level) {
+			return 1;
+		}
+		return 0;
 	}
 
 }
