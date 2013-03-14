@@ -50,7 +50,7 @@ function quizwindow(levelCache) {
 
 		// truncate list
 		var i = 0;
-		while (quizEntries[i].level == 0 || i < MIN_QUIZ_ENTRIES) {
+		while (i < quizEntries.length && (quizEntries[i].level == 0 || i < MIN_QUIZ_ENTRIES)) {
 			i++;
 		}
 		quizEntries = quizEntries.slice(0, i);

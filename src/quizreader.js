@@ -25,12 +25,12 @@ $(document).ready(function() {
 		$("#content").hide();
 		defWindow.showDefinition(word, function() {
 			$("#content").show();
-		});		
+		});
 	});
 
 	// parse paragraph from url and unhide up to that point
 	var paragraph = parseInt(/[?&]paragraph=([^&]*)/.exec(window.location.search)[1]);
-	//unhideToParagraph(paragraph);
+	// unhideToParagraph(paragraph);
 
 	// add text "more" button + handler
 	var moreButton = $("<button>More...</button>").appendTo("#content").show();
@@ -86,6 +86,9 @@ $(document).ready(function() {
 				}
 			}
 			$(this).show();
+			if (counter == para - 1) {
+				$("body").scrollTop($(this).position().top);
+			}
 		});
 	}
 
