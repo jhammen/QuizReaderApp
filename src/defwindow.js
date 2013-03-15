@@ -7,14 +7,15 @@ function defwindow(levelCache) {
 	var div = $("<div id='defDiv'/>").appendTo("body");
 
 	var init = function(callback) {
+		var IDEAL_WIDTH = 300;
+		var IDEAL_HEIGHT = 300;
+		var pageWidth = $(window).width();
+		var pageHeight = window.innerHeight;
+		var width = pageWidth < IDEAL_WIDTH ? pageWidth : IDEAL_WIDTH;
+		var height = pageHeight < IDEAL_HEIGHT ? pageHeight : IDEAL_HEIGHT;
+
 		div.load("templates/showdef.html", function() {
 			// size center divs
-			var IDEAL_WIDTH = 300;
-			var IDEAL_HEIGHT = 300;
-			var pageWidth = $(window).width();
-			var pageHeight = window.innerHeight;
-			var width = pageWidth < IDEAL_WIDTH ? pageWidth : IDEAL_WIDTH;
-			var height = pageHeight < IDEAL_HEIGHT ? pageHeight : IDEAL_HEIGHT;
 			div.height(height);
 			div.width(width);
 			div.css('top', parseInt(pageHeight / 2 - height / 2) + 'px');
@@ -69,15 +70,29 @@ function defwindow(levelCache) {
 		$("#defList").empty();
 		for ( var i = 0; i < ent.defs.length; i++) {
 			var def = ent.defs[i];
-			$("<li>" + def.text + "</li>").appendTo("#defList");
+			var root = def.root;
+			var text = def.text;
+			if (root) {
+				text = text.replace(root, "<u><a>" + root + "</a></u>");
+			}
+			$("<li>" + text + "</li>").appendTo("#defList");
+			if (root) {
+				$("#defList a").click(function() {
+					var word = $(this).text();
+					lookupDefinition(word);
+				});
+			}
 		}
 	}
 
-	function showDefinition(word, callback) {
-		div.show();
-		// get entries
+	function lookupDefinition(word) {
 		var arr = JSON.parse(qr.getEntries(word));
 		showDef(arr[0]);
+	}
+	
+	function showDefinition(word, callback) {
+		div.show();
+		lookupDefinition(word);
 		$("#nextDef").unbind('click');
 		$("#nextDef").click(function() {
 			div.hide();

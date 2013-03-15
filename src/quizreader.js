@@ -21,10 +21,12 @@ $(document).ready(function() {
 
 	// set up clickable words
 	$("a").click(function() {
+		var oldTop = $(window).scrollTop();
 		var word = $(this).text();
 		$("#content").hide();
 		defWindow.showDefinition(word, function() {
 			$("#content").show();
+			$(window).scrollTop(oldTop);
 		});
 	});
 

@@ -43,7 +43,7 @@ qr.getEntries = function(word) {
 	for ( var i = 0; i < 2; i++) {
 		extra = extra + " word" + i;
 	}
-	var ent = "{ \"word\": \"" + word + "\", \"defs\": [{\"text\" : \"" + extra + "here is the definition for " + word + "\"" + root + "}], \"level\": " + level + "}";
+	var ent = "{ \"word\": \"" + word + "\", \"defs\": [{\"text\" : \"" + extra + "here is the root definition for " + word + "\"" + root + "}], \"level\": " + level + "}";
 	return "[" + ent + ent2 + "]";
 };
 
