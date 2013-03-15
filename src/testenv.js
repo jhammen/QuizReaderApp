@@ -17,6 +17,14 @@
 
 var qr = {};
 
+qr.showMessage = function(mesg) {
+	console.log(mesg);
+}
+
+qr.endMessage = function() {
+	console.log("[close message dialog]");
+}
+
 qr.endPage = function() {
 	alert('done');
 	window.location = "about:blank";

@@ -43,10 +43,12 @@ function defwindow(levelCache) {
 		while (defEntries.length == 0) {
 			var word = wordList.pop();
 			if (!word) { // done
+				qr.endMessage();
 				div.hide();
 				callback(quizMap);
 				return;
 			}
+			qr.showMessage("loading word: " + word);
 			if (levelCache.isUnknownWord(word)) {
 				var arr = JSON.parse(qr.getEntries(word));
 				for ( var i = 0; i < arr.length; i++) {
@@ -60,6 +62,7 @@ function defwindow(levelCache) {
 				}
 			}
 		}
+		qr.endMessage();
 		var ent = defEntries.pop();
 		showDef(ent);
 		return ent.word;

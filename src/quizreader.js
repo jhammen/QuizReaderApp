@@ -56,6 +56,7 @@ $(document).ready(function() {
 	// init windows and start
 	quizWindow.init(function() {
 		defWindow.init(function() {
+			qr.showMessage("page loaded");
 			quizRead();
 		});
 	});
@@ -64,11 +65,13 @@ $(document).ready(function() {
 
 	function quizRead() {
 		// grab all words for the current paragraph
+		qr.showMessage("finding words in paragraph " + paragraph);
 		var wordMap = {};
 		$("p:nth-of-type(" + paragraph + ") a").each(function(index) {
 			wordMap[$(this).text()] = 1;
 		});
 		var wordList = Object.keys(wordMap);
+		qr.showMessage("found " + wordList.length + " unique words");
 		// run definitions window
 		greyDiv.show();
 		$("#content").hide();
