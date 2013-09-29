@@ -33,7 +33,7 @@
 }
 
 #defDiv,#quizDiv {
-	position: absolute;	
+	position: absolute;
 	background-color: #ffffff;
 	padding: 5px;
 	border: 1px solid blue;
@@ -45,4 +45,21 @@
 
 #content {
 	display: none;
+}
+
+@font-face {
+	font-family: 'calligraphica';
+	src: url('./fonts/Kingthings_Calligraphica_2.ttf') format('truetype');	
+	font-weight: normal;
+	font-style: normal;
+}
+
+.langDeutsch {
+	font-size: 42px;
+	font-family: calligraphica;
+}
+
+.langFrancais {
+	font-size: 42px;
+	font-family: calligraphica;
 }
