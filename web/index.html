@@ -9,50 +9,51 @@
 <link rel="stylesheet" href="./quizreader.css">
 <script src="./jquery/jquery-1.10.2.min.js"></script>
 <script src="./jquery/jquery.mobile-1.3.2.js"></script>
+<script src="./handlebars.js"></script>
 <script src="./quizreaderjqm.js"></script>
 </head>
 
-
 <body>
 
-	<!-- Start of first page -->
+	<!-- Splash Page -->
 	<div data-role="page" id="splash">
-
+		<script id="splash_template" type="text/x-handlebars-template">
+			{{#.}}<li><a href="#current">
+					<span class="langDeutsch">{{language}}</span> <span class="ui-li-aside wordCount">{{count}}</span>
+				</a></li>
+			</ul>{{/.}}
+		</script>
 		<div data-role="header">
-			<h1>Welcome!</h1>
+			<h1>QuizReader: Welcome!</h1>
 		</div>
-		<!-- /header -->
 
 		<div data-role="content">
-			<div id="splash_content"></div>
+			<div id="splash_content">
+				<ul id="language_list" data-role="listview">
+				</ul>
+			</div>
 		</div>
-		<!-- /content -->
-
+		<div data-role="footer" data-position="fixed">
+			<h4>X Words Total!</h4>
+		</div>
 	</div>
-	<!-- /page -->
 
-	<!-- Start of second page -->
-	<div data-role="page" id="bar">
+	<div data-role="page" id="current">
 
 		<div data-role="header">
-			<h1>Bar</h1>
+			<h1>QuizReader: Currently Reading</h1>
 		</div>
 		<!-- /header -->
 
-		<div data-role="content">
-			<p>I'm the second in the source order so I'm hidden when the page
-				loads. I'm just shown if a link that references my id is beeing
-				clicked.</p>
-			<p>
-				<a href="#foo">Back to foo</a>
-			</p>
+		<div data-role="content" class="full">
+			<ul id="" data-role="listview">
+				<li><a href="#splash">Foo</a></li>
+			</ul>
 		</div>
-		<!-- /content -->
 
-		<div data-role="footer">
-			<h4>Page Footer</h4>
+		<div data-role="footer" data-position="fixed">
+			<h4>X Words</h4>
 		</div>
-		<!-- /footer -->
 	</div>
 	<!-- /page -->
 </body>

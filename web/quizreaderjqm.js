@@ -9,9 +9,11 @@ var qr = {
 };
 
 $(document).delegate("#splash", "pageinit", function() {
+	var source = $("#splash_template").html();
+	var template = Handlebars.compile(source);
+	
 	$(document).on('pagebeforeshow', '#splash', function(e, data) {
-		qr.get("templates/splash.html").done(function(data) {
-			$("#splash_content").html(data);
-		})
-	})
+		var data = [{language: "German", count: 99 }, {language: "Spanish", count: 101 }];
+		$("#language_list").html(template(data)).listview("refresh");
+	});
 });
