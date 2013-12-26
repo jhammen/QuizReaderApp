@@ -12,11 +12,17 @@
 </head>
 
 <body>
+	<script id="title_template" type="text/x-handlebars-template">
+	<a href="#details">
+	<!--<img src="{{loc}}/cover.png">-->
+	<h2>{{title}}</h2>
+	<p>by: {{author}}</p></a>
+	</script>
 
 	<!-- Splash Page -->
 	<div data-role="page" id="splash">
 		<script id="splash_template" type="text/x-handlebars-template">
-			{{#.}}<li><a href="#current">
+			{{#.}}<li><a href="#" data-code="{{code}}">
 					<span class="langDeutsch">{{language}}</span> <span class="ui-li-aside wordCount">{{count}}</span>
 				</a></li>
 			{{else}}
@@ -43,10 +49,7 @@
 			<h1>QuizReader: Currently Reading</h1>
 		</div>
 		<script id="current_template" type="text/x-handlebars-template">
-			{{#.}}<li><a href="#details">
-					<img src="{{loc}}/cover.png">
-					<h2>{{title}}</h2>
-					<p>by: {{author}}</p>
+			{{#.}}<li>{{> title}}</li>
 			{{else}}No Open Titles		
 			{{/.}}
 			<li data-icon="plus"><a href="#library">Add Title</a></li>
@@ -67,9 +70,9 @@
 			<h1>QuizReader: Title Details</h1>
 		</div>
 
-
 		<div data-role="content" class="full">
 			<b>Title</b>
+			<button>Read</button>
 		</div>
 
 		<div data-role="footer" data-position="fixed">
@@ -83,11 +86,13 @@
 			<h1>QuizReader: Library</h1>
 		</div>
 		<script id="library_template" type="text/x-handlebars-template">
-			{{#.}}<li><a href="{{loc}}">
-					<img src="/library/fr/{{loc}}/cover.png">
-					<h2>{{title}}</h2>
-					<p>by: {{author}}</p>		
-				</a></li>			
+			{{#.}}<li>{{#if path}}
+				<a href="{{loc}}" data-path="{{path}}">
+					<img src="/library/folder.png">
+					<h2>{{name}}</h2>
+					<p>{{description}}</p>		
+				</a>{{/if}}</li>
+			{{else}}<li>(Folder is Empty)</li>
 			{{/.}}
 		</script>
 
