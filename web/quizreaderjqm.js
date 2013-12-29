@@ -18,8 +18,6 @@ var qr = {
 
 	language : null,
 
-	library : null,
-
 	get : function(url) {
 		return $.get(url).fail(function(jxhr, status, error) {
 			alert(error);
@@ -29,21 +27,18 @@ var qr = {
 
 	showCurrent : function(code) {
 		this.language = code;
-		this.library = "/library/" + code;
 		$.mobile.changePage("#current");
 	},
 
 	showTitle : function(id) {
 		alert("showing title " + id);
-	},
-
+	}
 };
 
 // global init for any page
 $(document).delegate("div[data-role='page']", "pageinit", function() {
 	if (!qr.language) {
 		Handlebars.registerPartial("title", $("#title_template").html());
-		$.mobile.changePage("#splash");
 	}
 
 	$(document).on("pagebeforeshow", "div[data-role='page']", function(e, data) {
@@ -61,7 +56,6 @@ $(document).delegate("#splash", "pageinit", function() {
 		var list = $("#language_list");
 		list.html(template(data)).listview("refresh");
 		$("a[data-code]", list).on('click', function(e) {
-			e.preventDefault();
 			qr.showCurrent($(this).data("code"));
 		});
 	});
@@ -81,26 +75,53 @@ $(document).delegate("#library", "pageinit", function() {
 	var source = $("#library_template").html();
 	var template = Handlebars.compile(source);
 
+	// library state
+	var lib = {
+		language : null,
+		current : null,
+		prepare : function(data) {
+			for ( var i = 0; i < data.length; i++) {
+				data[i].sub = data[i].sub ? data[i].sub : [];
+				data[i].sub.parent = data;
+				this.prepare(data[i].sub);
+			}
+		}
+	};
+
 	function showEntry() {
-		$.getJSON(qr.library + "/idx.json").done(function(data) {
-			var list = $("#library_list");
-			list.html(template(data)).listview("refresh");
-			$("li[data-title]", list).on('click', function(e) {
-				e.preventDefault();
-				qr.showTitle($(this).data("title"));
-			});
-			$("a[data-path]", list).on('click', function(e) {
-				e.preventDefault();
-				qr.library = qr.library + "/" + $(this).data("path")
-				showEntry();
-			});
-		}).fail(function(foo, mesg) {
-			alert(mesg);
-			console.log(foo);
+		var list = $("#library_list");
+		// redo list from template
+		list.html(template(lib.current)).listview("refresh");
+		// add event handlers to new list items
+		$("a[data-title]", list).on('click', function(e) {
+			qr.showTitle($(this).data("title"));
+		});
+		$("a[data-parent]", list).on('click', function(e) {
+			lib.current = lib.current.parent;
+			showEntry();
+		});
+		$("a[data-index]", list).on('click', function(e) {
+			var index = $(this).data("index");
+			lib.current = lib.current[index].sub;
+			showEntry();
 		});
 	}
 
 	$(document).on('pagebeforeshow', '#library', function(e, data) {
-		showEntry();
+		if (qr.language) {
+			if (lib.language != qr.language) {
+				$.getJSON("/library/" + qr.language + "/idx.json").done(function(data) {
+					lib.language = qr.language;
+					lib.current = data;
+					lib.prepare(data);
+					showEntry();
+				}).fail(function(foo, mesg) {
+					alert(mesg);
+					console.log(foo);
+				});
+			}
+		} else {
+			$.mobile.changePage("#splash");
+		}
 	});
 });

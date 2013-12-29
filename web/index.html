@@ -86,14 +86,26 @@
 			<h1>QuizReader: Library</h1>
 		</div>
 		<script id="library_template" type="text/x-handlebars-template">
-			{{#.}}<li>{{#if path}}
-				<a href="{{loc}}" data-path="{{path}}">
+			{{#if parent}}
+			<li><a href="#" data-parent="true">
+				<img src="/library/folder.png">
+				<h2>Up</h2>
+				<p>{{desc}}</p>
+			</a></li>
+			{{/if}}
+			{{#each .}}<li>
+			{{#if name}}
+				<a href="#" data-index="{{@index}}">
 					<img src="/library/folder.png">
 					<h2>{{name}}</h2>
-					<p>{{description}}</p>		
-				</a>{{/if}}</li>
+					<p>{{desc}}</p>		
+				</a>
+			{{else}}
+				<a href="#"><h2>{{title}}</h2></a>
+			{{/if}}
+			</li>
 			{{else}}<li>(Folder is Empty)</li>
-			{{/.}}
+			{{/each}}
 		</script>
 
 		<div data-role="content" class="full">
