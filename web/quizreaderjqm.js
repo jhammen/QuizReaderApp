@@ -18,6 +18,8 @@ var qr = {
 
 	language : null,
 
+	docpath : null,
+
 	get : function(url) {
 		return $.get(url).fail(function(jxhr, status, error) {
 			alert(error);
@@ -30,19 +32,28 @@ var qr = {
 		$.mobile.changePage("#current");
 	},
 
-	showTitle : function(id) {
-		alert("showing title " + id);
+	showTitle : function(path) {
+		this.docpath = path;
+		$.mobile.changePage("#details");
+	},
+	
+	getCoverUrl : function() {
+		return "/library/" + this.language + '/' + this.docpath + "/cover.html";
+	},
+	
+	readTitle : function() {
+		// are we already reading this title
+		if(!dao.getTitle(this.docpath)) {
+			dao.addTitle(this.docpath);
+		}
+		$.mobile.changePage("#read");
 	}
 };
 
 // global init for any page
-$(document).delegate("div[data-role='page']", "pageinit", function() {
-	if (!qr.language) {
-		Handlebars.registerPartial("title", $("#title_template").html());
-	}
-
+$(document).delegate("div[data-role='page']", "pageinit", function(e) {
 	$(document).on("pagebeforeshow", "div[data-role='page']", function(e, data) {
-		// 
+		//
 	});
 });
 
@@ -71,6 +82,8 @@ $(document).delegate("#current", "pageinit", function() {
 	});
 });
 
+// ---------------------- library
+
 $(document).delegate("#library", "pageinit", function() {
 	var source = $("#library_template").html();
 	var template = Handlebars.compile(source);
@@ -80,7 +93,7 @@ $(document).delegate("#library", "pageinit", function() {
 		language : null,
 		current : null,
 		prepare : function(data) {
-			for ( var i = 0; i < data.length; i++) {
+			for (var i = 0; i < data.length; i++) {
 				data[i].sub = data[i].sub ? data[i].sub : [];
 				data[i].sub.parent = data;
 				this.prepare(data[i].sub);
@@ -91,10 +104,13 @@ $(document).delegate("#library", "pageinit", function() {
 	function showEntry() {
 		var list = $("#library_list");
 		// redo list from template
-		list.html(template(lib.current)).listview("refresh");
+		list.html(template({
+			lib : lib.current,
+			language : qr.language
+		})).listview("refresh");
 		// add event handlers to new list items
-		$("a[data-title]", list).on('click', function(e) {
-			qr.showTitle($(this).data("title"));
+		$("a[data-path]", list).on('click', function(e) {
+			qr.showTitle($(this).data("path"));
 		});
 		$("a[data-parent]", list).on('click', function(e) {
 			lib.current = lib.current.parent;
@@ -108,20 +124,37 @@ $(document).delegate("#library", "pageinit", function() {
 	}
 
 	$(document).on('pagebeforeshow', '#library', function(e, data) {
-		if (qr.language) {
-			if (lib.language != qr.language) {
-				$.getJSON("/library/" + qr.language + "/idx.json").done(function(data) {
-					lib.language = qr.language;
-					lib.current = data;
-					lib.prepare(data);
-					showEntry();
-				}).fail(function(foo, mesg) {
-					alert(mesg);
-					console.log(foo);
-				});
-			}
-		} else {
-			$.mobile.changePage("#splash");
+		if (!qr.language) {
+			$.mobile.changePage("#details");
+			return;
 		}
+		if (lib.language != qr.language) {
+			$.getJSON("/library/" + qr.language + "/idx.json").done(function(data) {
+				lib.language = qr.language;
+				lib.current = data;
+				lib.prepare(data);
+				showEntry();
+			}).fail(function(foo, mesg) {
+				alert(mesg);
+				console.log(foo);
+			});
+		}
+	});
+});
+
+// ------------------- details
+
+$(document).delegate("#details", "pageinit", function() {
+
+	$("#readButton").on('click', function(e) {
+		qr.readTitle();
+	});
+	
+	$(document).on('pagebeforeshow', '#details', function(e, data) {
+		if (!qr.docpath) {
+			$.mobile.changePage("#current");
+			return;
+		}
+		$("#cover_div").load(qr.getCoverUrl());
 	});
 });

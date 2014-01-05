@@ -13,11 +13,7 @@ var dao = {
 	},
 
 	getOpenTitles : function() {
-		return [ {
-			title : "Here is an Open Title",
-			author : "the author",
-			loc : "/library/??"
-		} ];
+		return [ ];
 	}
 
 };

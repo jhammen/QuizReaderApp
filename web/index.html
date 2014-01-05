@@ -12,13 +12,6 @@
 </head>
 
 <body>
-	<script id="title_template" type="text/x-handlebars-template">
-	<a href="#details">
-	<!--<img src="{{loc}}/cover.png">-->
-	<h2>{{title}}</h2>
-	<p>by: {{author}}</p></a>
-	</script>
-
 	<!-- Splash Page -->
 	<div data-role="page" id="splash">
 		<script id="splash_template" type="text/x-handlebars-template">
@@ -49,7 +42,14 @@
 			<h1>QuizReader: Currently Reading</h1>
 		</div>
 		<script id="current_template" type="text/x-handlebars-template">
-			{{#.}}<li>{{> title}}</li>
+			{{#.}}
+				<li>
+				<a href="#" data-path="{{path}}">
+				<img src="/library/{{../../language}}/{{path}}/cover.png">
+				<h2>{{title}}</h2>
+				<p>{{author}}</p></a>
+				[show progress bar]
+				</li>
 			{{else}}No Open Titles		
 			{{/.}}
 			<li data-icon="plus"><a href="#library">Add Title</a></li>
@@ -64,21 +64,6 @@
 			<h4>X Words in {{language}}</h4>
 		</div>
 	</div>
-	<div data-role="page" id="details">
-
-		<div data-role="header">
-			<h1>QuizReader: Title Details</h1>
-		</div>
-
-		<div data-role="content" class="full">
-			<b>Title</b>
-			<button>Read</button>
-		</div>
-
-		<div data-role="footer" data-position="fixed">
-			<h4>X Words in {{language}}</h4>
-		</div>
-	</div>
 
 	<div data-role="page" id="library">
 
@@ -86,14 +71,14 @@
 			<h1>QuizReader: Library</h1>
 		</div>
 		<script id="library_template" type="text/x-handlebars-template">
-			{{#if parent}}
+			{{#if lib.parent}}
 			<li><a href="#" data-parent="true">
 				<img src="/library/folder.png">
 				<h2>Up</h2>
 				<p>{{desc}}</p>
 			</a></li>
 			{{/if}}
-			{{#each .}}<li>
+			{{#each lib}}<li>
 			{{#if name}}
 				<a href="#" data-index="{{@index}}">
 					<img src="/library/folder.png">
@@ -101,7 +86,10 @@
 					<p>{{desc}}</p>		
 				</a>
 			{{else}}
-				<a href="#"><h2>{{title}}</h2></a>
+				<a href="#" data-path="{{path}}">
+				<img src="/library/{{../../language}}/{{path}}/cover.png">
+				<h2>{{title}}</h2>
+				<p>{{author}}</p></a>			
 			{{/if}}
 			</li>
 			{{else}}<li>(Folder is Empty)</li>
@@ -117,7 +105,23 @@
 			<h4>X Words in {{language}}</h4>
 		</div>
 	</div>
+	
+	<div data-role="page" id="details">
+
+		<div data-role="header">
+			<h1>QuizReader: Title Details</h1>
+		</div>
+
+		<div data-role="content" class="full">
+			<div id="cover_div"></div>
+			<button id="readButton">Read</button>
+		</div>
+
+		<div data-role="footer" data-position="fixed">
+			<h4>X Words in {{language}}</h4>
+		</div>
+	</div>
+		
+	
 </body>
-
-
 </html>
