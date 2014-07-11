@@ -1,5 +1,7 @@
 var dao = {
 
+	titles : [],
+
 	getWordCounts : function() {
 		return [ {
 			language : "German",
@@ -12,8 +14,16 @@ var dao = {
 		} ];
 	},
 
+	addTitle : function(name) {
+		this.titles.push(name);
+	},
+
 	getOpenTitles : function() {
-		return [ ];
+		return this.titles;
+	},
+
+	getTitle : function(name) {
+		return null;
 	}
 
 };

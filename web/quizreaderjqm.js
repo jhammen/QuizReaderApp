@@ -14,11 +14,34 @@
  You should have received a copy of the GNU General Public License
  along with QuizReader.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+// TODO: move inside qr
+function unhideToParagraph(para) {
+	var counter = 0;
+	// console.log("num items: " + $("#text > *").size());
+	$("#text > *").each(function(index) {
+		if ($(this).is('p')) {
+			if (++counter == para) {
+				return false;
+			}
+		}
+		$(this).show();
+		console.log("showing: " + $(this));
+		// if (counter == para - 1) {
+		// $("body").scrollTop($(this).position().top);
+		// }
+	});
+}
+
 var qr = {
 
-	language : null,
+	language : "es", // null,
 
-	docpath : null,
+	title : {
+		path : "books/OL21632392M"
+	}, // null,
+
+	paragraph : 0,
 
 	get : function(url) {
 		return $.get(url).fail(function(jxhr, status, error) {
@@ -27,26 +50,49 @@ var qr = {
 		});
 	},
 
+	showMessage : function(mesg) {
+		console.log(mesg);
+	},
+	
 	showCurrent : function(code) {
 		this.language = code;
 		$.mobile.changePage("#current");
 	},
 
 	showTitle : function(path) {
-		this.docpath = path;
+		this.title.path = path;
 		$.mobile.changePage("#details");
 	},
-	
+
 	getCoverUrl : function() {
-		return "/library/" + this.language + '/' + this.docpath + "/cover.html";
+		return "/library/" + this.language + '/' + this.title.path + "/cover.html";
 	},
-	
+
 	readTitle : function() {
 		// are we already reading this title
-		if(!dao.getTitle(this.docpath)) {
-			dao.addTitle(this.docpath);
+		if (!dao.getTitle(this.title.path)) {
+			dao.addTitle(this.title.path);
 		}
 		$.mobile.changePage("#read");
+	},	
+
+	quizRead : function() {
+		// grab all words for the current paragraph
+		this.showMessage("finding words in paragraph " + this.title.paragraph);
+		var wordMap = {};
+		$("#text > p:nth-of-type(" + this.title.paragraph + ") a").each(function(index) {
+			wordMap[$(this).text()] = 1;
+		});
+		var wordList = Object.keys(wordMap);
+		this.showMessage("found " + wordList.length + " unique words");
+	},
+
+	loadTitle : function() {
+		// alert(this.docpath + "/t001.html");
+		this.title.paragraph = 1;
+		$("#text").load("/library/es/" + this.title.path + "/t001.html", function() {
+			qr.quizRead();
+		});
 	}
 };
 
@@ -149,12 +195,29 @@ $(document).delegate("#details", "pageinit", function() {
 	$("#readButton").on('click', function(e) {
 		qr.readTitle();
 	});
-	
+
 	$(document).on('pagebeforeshow', '#details', function(e, data) {
-		if (!qr.docpath) {
+		if (!qr.title.path) {
 			$.mobile.changePage("#current");
 			return;
 		}
 		$("#cover_div").load(qr.getCoverUrl());
+	});
+});
+
+// ------------------- read
+
+$(document).delegate("#read", "pageinit", function() {
+
+	$("#moreButton").on('click', function(e) {
+		qr.nextParagraph();
+	});
+
+	$(document).on('pagebeforeshow', '#read', function(e, data) {
+		if (!qr.title.path) {
+			$.mobile.changePage("#current");
+			return;
+		}
+		qr.loadTitle();
 	});
 });

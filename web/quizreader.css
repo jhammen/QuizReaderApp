@@ -39,13 +39,7 @@
 	border: 1px solid blue;
 }
 
-#content>* {
-	display: none;
-}
-
-#content {
-	display: none;
-}
+<!-- check above this line -->
 
 @font-face {
 	font-family: 'calligraphica';
@@ -80,3 +74,8 @@
 }
 
 a { color: inherit; text-decoration: none;} 
+
+#text > * {
+	display: none;
+}
+
