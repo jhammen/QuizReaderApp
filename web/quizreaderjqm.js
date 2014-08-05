@@ -33,15 +33,20 @@ function unhideToParagraph(para) {
 	});
 }
 
-var qr = {
+var qr = {		
 
-	language : "es", // null,
+	language : "es", // null,	
 
 	title : {
 		path : "books/OL21632392M"
 	}, // null,
 
-	paragraph : 0,
+	// section within document
+	section: 1,
+	// paragraph within section
+	paragraph : 1,
+	// 
+	wordList : [],
 
 	get : function(url) {
 		return $.get(url).fail(function(jxhr, status, error) {
@@ -50,49 +55,25 @@ var qr = {
 		});
 	},
 
-	showMessage : function(mesg) {
-		console.log(mesg);
-	},
-	
-	showCurrent : function(code) {
-		this.language = code;
-		$.mobile.changePage("#current");
-	},
-
 	showTitle : function(path) {
 		this.title.path = path;
 		$.mobile.changePage("#details");
 	},
+	
+	getBaseUrl : function() {
+		return "/QuizReaderEnglish/es/"; 
+	},
 
 	getCoverUrl : function() {
-		return "/library/" + this.language + '/' + this.title.path + "/cover.html";
+		return this.getBaseUrl() + this.title.path + "/cover.html";
 	},
-
-	readTitle : function() {
-		// are we already reading this title
-		if (!dao.getTitle(this.title.path)) {
-			dao.addTitle(this.title.path);
-		}
-		$.mobile.changePage("#read");
-	},	
-
-	quizRead : function() {
-		// grab all words for the current paragraph
-		this.showMessage("finding words in paragraph " + this.title.paragraph);
-		var wordMap = {};
-		$("#text > p:nth-of-type(" + this.title.paragraph + ") a").each(function(index) {
-			wordMap[$(this).text()] = 1;
-		});
-		var wordList = Object.keys(wordMap);
-		this.showMessage("found " + wordList.length + " unique words");
+		
+	getLibraryUrl: function() {
+		return this.getBaseUrl() + "idx.json";
 	},
-
-	loadTitle : function() {
-		// alert(this.docpath + "/t001.html");
-		this.title.paragraph = 1;
-		$("#text").load("/library/es/" + this.title.path + "/t001.html", function() {
-			qr.quizRead();
-		});
+	
+	getPageUrl: function() {
+		return this.getBaseUrl() + this.title.path + "/t00" + this.section + ".html";
 	}
 };
 
@@ -102,6 +83,48 @@ $(document).delegate("div[data-role='page']", "pageinit", function(e) {
 		//
 	});
 });
+
+// ---------------------- common methods
+
+// check the app state and redirect if necessary
+function checkState() {
+	if (!qr.title.path) {
+		$.mobile.changePage("#current");
+		return false;
+	}
+	/*
+	if (qr.wordList.length == 0) {
+		$.mobile.changePage("#read");
+		return false;
+	}
+*/
+	return true;
+}
+
+function quizRead(paragraph) {
+	var mesg = "finding words in paragraph " + paragraph;
+	if ($("p:nth-of-type(" + paragraph + ")").length > 0) {
+		$.mobile.loading("show", {
+			text : mesg
+		// textVisible: textVisible,
+		});
+		// grab all words for the current paragraph
+		var wordMap = {};
+		$("#text > p:nth-of-type(" + paragraph + ") a").each(function(index) {
+			wordMap[$(this).text()] = 1;
+		});
+		qr.wordList = dao.getNewWords(Object.keys(wordMap));
+		console.log("found " + qr.wordList.length + " unique words");
+		$.mobile.changePage("#show_def");
+	}
+	else { // next section
+		qr.section++;
+		qr.paragraph = 1;
+		$.mobile.changePage("#details");
+	}
+}
+
+// ---------------------- splash
 
 $(document).delegate("#splash", "pageinit", function() {
 	// init for splash page
@@ -113,10 +136,13 @@ $(document).delegate("#splash", "pageinit", function() {
 		var list = $("#language_list");
 		list.html(template(data)).listview("refresh");
 		$("a[data-code]", list).on('click', function(e) {
-			qr.showCurrent($(this).data("code"));
+			qr.language = $(this).data("code");
+			$.mobile.changePage("#current");
 		});
 	});
 });
+
+// ---------------------- current/now reading
 
 $(document).delegate("#current", "pageinit", function() {
 	var source = $("#current_template").html();
@@ -152,7 +178,7 @@ $(document).delegate("#library", "pageinit", function() {
 		// redo list from template
 		list.html(template({
 			lib : lib.current,
-			language : qr.language
+			libpath: qr.getBaseUrl()
 		})).listview("refresh");
 		// add event handlers to new list items
 		$("a[data-path]", list).on('click', function(e) {
@@ -175,7 +201,7 @@ $(document).delegate("#library", "pageinit", function() {
 			return;
 		}
 		if (lib.language != qr.language) {
-			$.getJSON("/library/" + qr.language + "/idx.json").done(function(data) {
+			$.getJSON(qr.getLibraryUrl()).done(function(data) {
 				lib.language = qr.language;
 				lib.current = data;
 				lib.prepare(data);
@@ -193,31 +219,92 @@ $(document).delegate("#library", "pageinit", function() {
 $(document).delegate("#details", "pageinit", function() {
 
 	$("#readButton").on('click', function(e) {
-		qr.readTitle();
+		// are we already reading this title
+		if (!dao.getTitle(this.title.path)) {
+			dao.addTitle(this.title.path);
+		}
+		$.mobile.changePage("#read");
 	});
 
 	$(document).on('pagebeforeshow', '#details', function(e, data) {
-		if (!qr.title.path) {
-			$.mobile.changePage("#current");
-			return;
+		if (checkState()) {
+			$("#cover_div").load(qr.getCoverUrl());
 		}
-		$("#cover_div").load(qr.getCoverUrl());
 	});
 });
 
-// ------------------- read
+// ------------------- reading page
 
 $(document).delegate("#read", "pageinit", function() {
 
 	$("#moreButton").on('click', function(e) {
-		qr.nextParagraph();
+		quizRead(qr.paragraph++);
 	});
 
 	$(document).on('pagebeforeshow', '#read', function(e, data) {
-		if (!qr.title.path) {
-			$.mobile.changePage("#current");
-			return;
+		if (checkState()) {		
+			// qr.title.paragraph = 1;
+			$("#text").load(qr.getPageUrl(), function() {
+				quizRead(qr.paragraph++);
+			});	
 		}
-		qr.loadTitle();
+	});
+});
+
+// ------------------- definition page
+
+$(document).delegate("#show_def", "pageinit", function() {
+
+	var source = $("#def_template").html();
+	var template = Handlebars.compile(source);
+
+	var defIndex = 1;
+
+	// "Next" button
+	$("#nextDefButton").on('click', function(e) {
+		if (defIndex < qr.wordList.length) {
+			// show the next definition
+			$("#def_div").html(template(qr.wordList[defIndex++]));
+		} else { // we're out of definitions to show
+			$.mobile.changePage("#quiz");
+		}
+	});
+
+	$(document).on('pagebeforeshow', '#show_def', function(e, data) {
+		if (checkState()) {
+			defIndex = 1;
+			$("#def_div").html(template(qr.wordList[0]));
+		}
+	});
+});
+
+// ------------------- quiz page
+
+$(document).delegate("#quiz", "pageinit", function() {
+
+	function showQuiz(obj) {
+		// show the next definition
+		$("#quiz_def").text(obj.word);
+		$("#quiz_answer1").text(obj.word);
+		$("#quiz_answer2").text(obj.word);
+		$("#quiz_answer3").text(obj.word);
+	}
+
+	var defIndex = 1;
+	// "Next" button
+	$("#nextQuizButton").on('click', function(e) {
+		if (defIndex < qr.wordList.length) {
+			showQuiz(qr.wordList[defIndex++]);
+		} else { // we're done showing quizzes
+			$.mobile.changePage("#read");
+		}
+	});
+
+	$(document).on('pagebeforeshow', '#quiz', function(e, data) {
+		if (checkState()) {
+			// $("#quiz_set").html(template(defList[0])).controlgroup("refresh");
+			defIndex = 1;
+			showQuiz(qr.wordList[0]);
+		}
 	});
 });

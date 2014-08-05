@@ -15,6 +15,7 @@ var dao = {
 	},
 
 	addTitle : function(name) {
+		console.log("adding title: " + name)
 		this.titles.push(name);
 	},
 
@@ -24,6 +25,18 @@ var dao = {
 
 	getTitle : function(name) {
 		return null;
+	},
+
+	getNewWords: function(wordList) {
+		if(wordList.length < 3)
+			alert("wordlist too short!!!");
+		return  [ {
+		word : wordList[0]
+	}, {
+		word : wordList[1]
+	}, {
+		word : wordList[2]
+	} ]
 	}
 
 };
