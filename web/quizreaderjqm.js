@@ -15,24 +15,6 @@
  along with QuizReader.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// TODO: move inside qr
-function unhideToParagraph(para) {
-	var counter = 0;
-	// console.log("num items: " + $("#text > *").size());
-	$("#text > *").each(function(index) {
-		if ($(this).is('p')) {
-			if (++counter == para) {
-				return false;
-			}
-		}
-		$(this).show();
-		console.log("showing: " + $(this));
-		// if (counter == para - 1) {
-		// $("body").scrollTop($(this).position().top);
-		// }
-	});
-}
-
 var qr = {		
 
 	language : "es", // null,	
@@ -101,12 +83,27 @@ function checkState() {
 	return true;
 }
 
+function unhideToParagraph(paragraph) {
+// unhide to paragraph
+		var counter = 0;
+		console.log("num top-level items in section file: " + $("#text > *").size());
+		$("#text > *").each(function(index) {
+			$(this).show();
+			if ($(this).is('p') && ++counter == paragraph) {
+				return false; // why?				
+			}
+			// if (counter == paragraph - 1) {
+			// $("body").scrollTop($(this).position().top);
+			// }
+		});
+}
+
 function quizRead(paragraph) {
-	var mesg = "finding words in paragraph " + paragraph;
+	// check we haven't gone past the end
 	if ($("p:nth-of-type(" + paragraph + ")").length > 0) {
 		$.mobile.loading("show", {
-			text : mesg
-		// textVisible: textVisible,
+			text : "finding words in paragraph " + paragraph,
+			textVisible: true
 		});
 		// grab all words for the current paragraph
 		var wordMap = {};
@@ -115,12 +112,21 @@ function quizRead(paragraph) {
 		});
 		qr.wordList = dao.getNewWords(Object.keys(wordMap));
 		console.log("found " + qr.wordList.length + " unique words");
-		$.mobile.changePage("#show_def");
+		// unhide to paragraph in background
+		setTimeout(function() { unhideToParagraph(paragraph); }, 100);
+		// start showing definitions
+		$.mobile.changePage("#show_def");		
 	}
 	else { // next section
+		alert("end of chapter " + qr.section);		
 		qr.section++;
 		qr.paragraph = 1;
-		$.mobile.changePage("#details");
+		$.mobile.loading("show", {
+			text : "loading chapter " + qr.section
+		});
+		$("#text").load(qr.getPageUrl(), function() {
+			quizRead(qr.paragraph++);
+		});
 	}
 }
 
@@ -223,7 +229,10 @@ $(document).delegate("#details", "pageinit", function() {
 		if (!dao.getTitle(this.title.path)) {
 			dao.addTitle(this.title.path);
 		}
-		$.mobile.changePage("#read");
+		// read
+		$("#text").load(qr.getPageUrl(), function() {
+			quizRead(qr.paragraph++);
+		});		
 	});
 
 	$(document).on('pagebeforeshow', '#details', function(e, data) {
@@ -242,12 +251,7 @@ $(document).delegate("#read", "pageinit", function() {
 	});
 
 	$(document).on('pagebeforeshow', '#read', function(e, data) {
-		if (checkState()) {		
-			// qr.title.paragraph = 1;
-			$("#text").load(qr.getPageUrl(), function() {
-				quizRead(qr.paragraph++);
-			});	
-		}
+		checkState();
 	});
 });
 
