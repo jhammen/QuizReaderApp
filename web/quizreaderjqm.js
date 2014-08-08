@@ -19,9 +19,10 @@ var qr = {
 
 	language : "es", // null,	
 
-	title : {
-		path : "books/OL21632392M"
-	}, // null,
+	current: {}, // hash of current titles
+
+	title: null,
+	// titlepath : "books/OL21632392M",
 
 	// section within document
 	section: 1,
@@ -35,11 +36,6 @@ var qr = {
 			alert(error);
 			console.log(error);
 		});
-	},
-
-	showTitle : function(path) {
-		this.title.path = path;
-		$.mobile.changePage("#details");
 	},
 	
 	getBaseUrl : function() {
@@ -59,6 +55,11 @@ var qr = {
 	}
 };
 
+// Handlebars init
+Handlebars.registerHelper("libpath", function() {
+	return qr.getBaseUrl();
+});
+
 // global init for any page
 $(document).delegate("div[data-role='page']", "pageinit", function(e) {
 	$(document).on("pagebeforeshow", "div[data-role='page']", function(e, data) {
@@ -70,7 +71,7 @@ $(document).delegate("div[data-role='page']", "pageinit", function(e) {
 
 // check the app state and redirect if necessary
 function checkState() {
-	if (!qr.title.path) {
+	if (!qr.title) {
 		$.mobile.changePage("#current");
 		return false;
 	}
@@ -115,7 +116,7 @@ function quizRead(paragraph) {
 		// unhide to paragraph in background
 		setTimeout(function() { unhideToParagraph(paragraph); }, 100);
 		// start showing definitions
-		$.mobile.changePage("#show_def");		
+		$.mobile.changePage("#show_def");
 	}
 	else { // next section
 		alert("end of chapter " + qr.section);		
@@ -138,12 +139,15 @@ $(document).delegate("#splash", "pageinit", function() {
 	var template = Handlebars.compile(source);
 
 	$(document).on('pagebeforeshow', '#splash', function(e, data) {
-		var data = dao.getWordCounts();
-		var list = $("#language_list");
-		list.html(template(data)).listview("refresh");
-		$("a[data-code]", list).on('click', function(e) {
-			qr.language = $(this).data("code");
-			$.mobile.changePage("#current");
+		dao.init( function() {
+			dao.getLanguages(function(languages) {
+				var list = $("#language_list");
+				list.html(template(languages)).listview("refresh");
+				$("a[data-code]", list).on('click', function(e) {
+					qr.language = $(this).data("code");
+					$.mobile.changePage("#current");
+				});
+			});
 		});
 	});
 });
@@ -155,8 +159,19 @@ $(document).delegate("#current", "pageinit", function() {
 	var template = Handlebars.compile(source);
 
 	$(document).on('pagebeforeshow', '#current', function(e, data) {
-		var data = dao.getOpenTitles();
-		$("#current_list").html(template(data)).listview("refresh");
+		qr.current = {};
+		dao.getOpenTitles(function(data) { 
+			// hash current titles
+			for(var i = 0; i < data.length; i++) {
+				qr.current[data[i].path] = data[i];
+			}
+			var list = $("#current_list");
+			list.html(template(data)).listview("refresh");
+			$("a[data-path]", list).on('click', function(e) {
+				qr.title = qr.current[$(this).data("path")];
+				$.mobile.changePage("#details");
+			});
+		});
 	});
 });
 
@@ -172,9 +187,11 @@ $(document).delegate("#library", "pageinit", function() {
 		current : null,
 		prepare : function(data) {
 			for (var i = 0; i < data.length; i++) {
-				data[i].sub = data[i].sub ? data[i].sub : [];
-				data[i].sub.parent = data;
-				this.prepare(data[i].sub);
+				if(data[i].name) {
+					data[i].sub = data[i].sub ? data[i].sub : [];
+					data[i].sub.parent = data;
+					this.prepare(data[i].sub);
+				}
 			}
 		}
 	};
@@ -186,9 +203,19 @@ $(document).delegate("#library", "pageinit", function() {
 			lib : lib.current,
 			libpath: qr.getBaseUrl()
 		})).listview("refresh");
+		// hash titles
+		var titleByPath = {};
+		for(var i = 0; i < lib.current.length; i++) {
+			if(lib.current[i].title) {
+				titleByPath[lib.current[i].path] = lib.current[i];
+			}
+		}
 		// add event handlers to new list items
 		$("a[data-path]", list).on('click', function(e) {
-			qr.showTitle($(this).data("path"));
+			qr.title = titleByPath[$(this).data("path")];
+			console.log("title hash for " + $(this).data("path"));
+			console.log(qr.title);
+			$.mobile.changePage("#details");
 		});
 		$("a[data-parent]", list).on('click', function(e) {
 			lib.current = lib.current.parent;
@@ -207,6 +234,10 @@ $(document).delegate("#library", "pageinit", function() {
 			return;
 		}
 		if (lib.language != qr.language) {
+			$.mobile.loading("show", {
+				text : "loading library for " + qr.language,
+				textVisible: true
+			});	
 			$.getJSON(qr.getLibraryUrl()).done(function(data) {
 				lib.language = qr.language;
 				lib.current = data;
@@ -226,8 +257,8 @@ $(document).delegate("#details", "pageinit", function() {
 
 	$("#readButton").on('click', function(e) {
 		// are we already reading this title
-		if (!dao.getTitle(this.title.path)) {
-			dao.addTitle(this.title.path);
+		if (!qr.current[qr.title.path]) {			
+			dao.addTitle(qr.title);
 		}
 		// read
 		$("#text").load(qr.getPageUrl(), function() {

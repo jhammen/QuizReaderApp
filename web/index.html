@@ -8,7 +8,7 @@
 <script src="./jquery/jquery-2.1.1.js"></script>
 <script src="./jquery/jquery.mobile-1.4.3.js"></script>
 <script src="./handlebars.js"></script>
-<script src="./test/dao.js"></script>
+<script src="./dao.js"></script>
 <script src="./quizreaderjqm.js"></script>
 </head>
 
@@ -17,7 +17,7 @@
 	<div data-role="page" id="splash">
 		<script id="splash_template" type="text/x-handlebars-template">
 			{{#.}}<li><a href="#" data-code="{{code}}">
-					<span class="langDeutsch">{{language}}</span> <span class="ui-li-aside wordCount">{{count}}</span>
+					<span>{{name}}</span> <span class="ui-li-aside">{{wordCount}}</span>
 				</a></li>
 			{{else}}
 			{{/.}}
@@ -40,17 +40,15 @@
 	<div data-role="page" id="current">
 
 		<div data-role="header">
-			<h1>QuizReader: Currently Reading</h1>
+			<h1>QuizReader: Open Titles</h1>
 		</div>
 		<script id="current_template" type="text/x-handlebars-template">
 			{{#.}}
-				<li>
-				<a href="#" data-path="{{path}}">
-				<img src="{{../../libpath}}{{path}}/cover.png">
+				<li><a href="#" data-path="{{path}}">
+				<img src="{{libpath}}{{path}}/cover.png">
 				<h2>{{title}}</h2>
-				<p>{{author}}</p></a>
-				[show progress bar]
-				</li>
+				<p>{{author}}</p>				
+				</a></li>
 			{{else}}No Open Titles		
 			{{/.}}
 			<li data-icon="plus"><a href="#library">Add Title</a></li>
