@@ -1,12 +1,12 @@
-var dao = {
+var indexeddao = {
 
 	db: null,
 
 	print : function() { console.log("db is " + this.db) },
 
-	supported: function() { return window.indexedDB; },
+	isSupported: function() { return window.indexedDB; },
 
-	init : function(callback) {		
+	open : function(callback) {
 		var self = this;
 		var request = indexedDB.open("MyTestDatabase3", 2);		
 		request.onerror = function(event) {
@@ -15,15 +15,16 @@ var dao = {
 		};
 		request.onupgradeneeded = function(event) {		
 		  var db = request.result;
-		if(event.oldVersion < 1) {
-		  var titleStore = db.createObjectStore("titles", {keyPath: "path"});
-		  var activeIndex = titleStore.createIndex("is_active", "active");
-		}
-		if (event.oldVersion < 2) {
-		  var languageStore = db.createObjectStore("languages", {keyPath: "code"});
-		}
-			// debug
-			
+			if(event.oldVersion < 1) {
+			  var titleStore = db.createObjectStore("titles", {keyPath: "path"});
+			  var activeIndex = titleStore.createIndex("is_active", "active");
+			}
+			if (event.oldVersion < 2) {
+			  var languageStore = db.createObjectStore("languages", {keyPath: "code"});
+			}
+			if (event.oldVersion < 3) {
+			  var wordStore = db.createObjectStore("words", {keyPath: "token"});
+			}						
 		};
 		request.onsuccess = function(event) {
 		  self.db = request.result;
@@ -31,12 +32,15 @@ var dao = {
 		};
 	},
 
-	addLanguage : function(language) {		
+	addLanguage : function(language, callback) {		
 		var transaction = this.db.transaction("languages", "readwrite");
 		var objectStore = transaction.objectStore("languages");	
 		var request = objectStore.add(language);
 		request.onerror = function(event) {
 			alert("addLanguage request failed");
+		};
+		request.onsuccess = function(event) {
+			callback();
 		};
 	},
 
@@ -78,15 +82,15 @@ var dao = {
 		request.onerror = function(event) {
 			alert("request error");
 		};
-		//this.titles.push(name);
+		// this.titles.push(name);
 	},
 
 	getOpenTitles : function(callback) {
 		var transaction = this.db.transaction(["titles"]);
 		var objectStore = transaction.objectStore("titles");
-		//var index = objectStore.index("is_active");
+		// var index = objectStore.index("is_active");
 		var titles = [];		
-		//index.openCursor().onsuccess = function(event) {
+		// index.openCursor().onsuccess = function(event) {
 		objectStore.openCursor().onsuccess = function(event) {
 		  var cursor = event.target.result;
 		  if (cursor) {		
@@ -100,7 +104,12 @@ var dao = {
 		};		
 	},
 
-	getNewWords: function(wordList) {
+	getNewWords: function(wordList, callback) {
+		var transaction = this.db.transaction("words", "readwrite");
+		var objectStore = transaction.objectStore("words");
+		
+		
+		
 		if(wordList.length < 3)
 			alert("wordlist too short!!!");
 		return  [ {
@@ -113,3 +122,7 @@ var dao = {
 	}
 
 };
+
+var memorydao = {
+		
+}

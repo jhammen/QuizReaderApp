@@ -15,42 +15,38 @@
  along with QuizReader.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-var qr = {		
+var qr = {
 
-	language : "es", // null,	
+	dao : null,
 
-	current: {}, // hash of current titles
+	languages : null,
 
-	title: null,
-	// titlepath : "books/OL21632392M",
+	language : null,
+
+	current : {}, // hash of current titles
+
+	title : null,
 
 	// section within document
-	section: 1,
+	section : 1,
 	// paragraph within section
 	paragraph : 1,
 	// 
 	wordList : [],
 
-	get : function(url) {
-		return $.get(url).fail(function(jxhr, status, error) {
-			alert(error);
-			console.log(error);
-		});
-	},
-	
 	getBaseUrl : function() {
-		return "/QuizReaderEnglish/es/"; 
+		return "/library/es/";
 	},
 
 	getCoverUrl : function() {
 		return this.getBaseUrl() + this.title.path + "/cover.html";
 	},
-		
-	getLibraryUrl: function() {
+
+	getLibraryUrl : function() {
 		return this.getBaseUrl() + "idx.json";
 	},
-	
-	getPageUrl: function() {
+
+	getPageUrl : function() {
 		return this.getBaseUrl() + this.title.path + "/t00" + this.section + ".html";
 	}
 };
@@ -60,43 +56,67 @@ Handlebars.registerHelper("libpath", function() {
 	return qr.getBaseUrl();
 });
 
-// global init for any page
-$(document).delegate("div[data-role='page']", "pageinit", function(e) {
-	$(document).on("pagebeforeshow", "div[data-role='page']", function(e, data) {
-		//
+// ---------------------- init methods
+
+function checkDb(callback) {
+	if (qr.dao) {
+		return callback();
+	}
+	if (indexeddao.isSupported()) {
+		qr.dao = indexeddao;
+		qr.dao.open(function() {
+			return callback();
+		});
+	} else {
+		alert("Your browser does not support saving data, you can test the app but will not be able to save your progress");
+		qr.dao = memorydao;
+		return callback();
+	}
+}
+
+function checkLanguage(callback) {
+	if (qr.language) {
+		return callback();
+	}
+	return checkDb(function() {
+		qr.dao.getLanguages(function(data) {
+			qr.languages = data;
+			if (data.length > 1) {
+				$.mobile.changePage("#language_choice");
+			} else if (data.length == 0) { // no existing languages
+				$.mobile.changePage("#language_add");
+			} else {
+				qr.language = data[0].code;
+				return callback();
+			}
+		});
 	});
-});
+}
+
+function checkTitle(callback) {
+	if (qr.title) {
+		return callback();
+	}
+	return checkLanguage(function() {
+		$.mobile.changePage("#current");
+	});
+}
 
 // ---------------------- common methods
 
-// check the app state and redirect if necessary
-function checkState() {
-	if (!qr.title) {
-		$.mobile.changePage("#current");
-		return false;
-	}
-	/*
-	if (qr.wordList.length == 0) {
-		$.mobile.changePage("#read");
-		return false;
-	}
-*/
-	return true;
-}
-
 function unhideToParagraph(paragraph) {
-// unhide to paragraph
-		var counter = 0;
-		console.log("num top-level items in section file: " + $("#text > *").size());
-		$("#text > *").each(function(index) {
-			$(this).show();
-			if ($(this).is('p') && ++counter == paragraph) {
-				return false; // why?				
-			}
-			// if (counter == paragraph - 1) {
-			// $("body").scrollTop($(this).position().top);
-			// }
-		});
+	// unhide to paragraph
+	var counter = 0;
+	console.log("num top-level items in section file: " + $("#text > *").size());
+	$("#text > *").each(function(index) {
+		$(this).show();
+		if ($(this).is('p') && ++counter == paragraph) {
+			return false; // why?
+		}
+		// if (counter == paragraph - 1) {
+		// $("body").scrollTop($(this).position().top);
+		// }
+	});
 }
 
 function quizRead(paragraph) {
@@ -104,7 +124,7 @@ function quizRead(paragraph) {
 	if ($("p:nth-of-type(" + paragraph + ")").length > 0) {
 		$.mobile.loading("show", {
 			text : "finding words in paragraph " + paragraph,
-			textVisible: true
+			textVisible : true
 		});
 		// grab all words for the current paragraph
 		var wordMap = {};
@@ -114,12 +134,13 @@ function quizRead(paragraph) {
 		qr.wordList = dao.getNewWords(Object.keys(wordMap));
 		console.log("found " + qr.wordList.length + " unique words");
 		// unhide to paragraph in background
-		setTimeout(function() { unhideToParagraph(paragraph); }, 100);
+		setTimeout(function() {
+			unhideToParagraph(paragraph);
+		}, 100);
 		// start showing definitions
 		$.mobile.changePage("#show_def");
-	}
-	else { // next section
-		alert("end of chapter " + qr.section);		
+	} else { // next section
+		alert("end of chapter " + qr.section);
 		qr.section++;
 		qr.paragraph = 1;
 		$.mobile.loading("show", {
@@ -131,20 +152,40 @@ function quizRead(paragraph) {
 	}
 }
 
-// ---------------------- splash
+// ---------------------- language add
 
-$(document).delegate("#splash", "pageinit", function() {
-	// init for splash page
-	var source = $("#splash_template").html();
+$(document).delegate("#language_add", "pageinit", function() {
+	var source = $("#add_language_template").html();
 	var template = Handlebars.compile(source);
-
-	$(document).on('pagebeforeshow', '#splash', function(e, data) {
-		dao.init( function() {
-			dao.getLanguages(function(languages) {
-				var list = $("#language_list");
-				list.html(template(languages)).listview("refresh");
-				$("a[data-code]", list).on('click', function(e) {
-					qr.language = $(this).data("code");
+	$(document).on('pagebeforeshow', '#language_add', function(e, data) {
+		checkLanguage(function() {
+			var languages = [ {
+				code : "es",
+				name : "Spanish"
+			}, {
+				code : "fr",
+				name : "French"
+			} ];
+			// turn list into hash of new languages
+			var languageHash = {};
+			for(var i = 0; i < languages.length; i++) {
+				var code = languages[i].code;
+				languageHash[code] = languages[i];
+				for(var j = 0; j < qr.languages.length; j++) {
+					if(code == qr.languages[j].code) {
+						languages[i].inuse = true;
+					}
+				}
+			}
+			var list = $("#add_language_list");
+			list.html(template(languages)).listview("refresh");
+			$("a[data-code]", list).on('click', function(e) {
+				qr.language = $(this).data("code");
+				qr.dao.addLanguage({
+					code : qr.language,
+					name : languageHash[qr.language],
+					words : 0
+				}, function() {
 					$.mobile.changePage("#current");
 				});
 			});
@@ -152,24 +193,44 @@ $(document).delegate("#splash", "pageinit", function() {
 	});
 });
 
+// ---------------------- language choice
+
+$(document).delegate("#language_choice", "pageinit", function() {
+	var source = $("#language_template").html();
+	var template = Handlebars.compile(source);
+
+	$(document).on('pagebeforeshow', '#language_choice', function(e, data) {
+		checkLanguage(function() {
+			var list = $("#language_list");
+			list.html(template(qr.languages)).listview("refresh");
+			$("a[data-code]", list).on('click', function(e) {
+				qr.language = $(this).data("code");
+				$.mobile.changePage("#current");
+			});
+		});
+	});
+});
+
 // ---------------------- current/now reading
 
-$(document).delegate("#current", "pageinit", function() {
+$(document).delegate("#current", "pagebeforecreate", function() {
 	var source = $("#current_template").html();
 	var template = Handlebars.compile(source);
 
 	$(document).on('pagebeforeshow', '#current', function(e, data) {
-		qr.current = {};
-		dao.getOpenTitles(function(data) { 
-			// hash current titles
-			for(var i = 0; i < data.length; i++) {
-				qr.current[data[i].path] = data[i];
-			}
-			var list = $("#current_list");
-			list.html(template(data)).listview("refresh");
-			$("a[data-path]", list).on('click', function(e) {
-				qr.title = qr.current[$(this).data("path")];
-				$.mobile.changePage("#details");
+		checkLanguage(function() {
+			qr.current = {};
+			qr.dao.getOpenTitles(function(data) {
+				// hash current titles
+				for (var i = 0; i < data.length; i++) {
+					qr.current[data[i].path] = data[i];
+				}
+				var list = $("#current_list");
+				list.html(template(data)).listview("refresh");
+				$("a[data-path]", list).on('click', function(e) {
+					qr.title = qr.current[$(this).data("path")];
+					$.mobile.changePage("#details");
+				});
 			});
 		});
 	});
@@ -187,7 +248,7 @@ $(document).delegate("#library", "pageinit", function() {
 		current : null,
 		prepare : function(data) {
 			for (var i = 0; i < data.length; i++) {
-				if(data[i].name) {
+				if (data[i].name) {
 					data[i].sub = data[i].sub ? data[i].sub : [];
 					data[i].sub.parent = data;
 					this.prepare(data[i].sub);
@@ -201,12 +262,12 @@ $(document).delegate("#library", "pageinit", function() {
 		// redo list from template
 		list.html(template({
 			lib : lib.current,
-			libpath: qr.getBaseUrl()
+			libpath : qr.getBaseUrl()
 		})).listview("refresh");
 		// hash titles
 		var titleByPath = {};
-		for(var i = 0; i < lib.current.length; i++) {
-			if(lib.current[i].title) {
+		for (var i = 0; i < lib.current.length; i++) {
+			if (lib.current[i].title) {
 				titleByPath[lib.current[i].path] = lib.current[i];
 			}
 		}
@@ -229,47 +290,44 @@ $(document).delegate("#library", "pageinit", function() {
 	}
 
 	$(document).on('pagebeforeshow', '#library', function(e, data) {
-		if (!qr.language) {
-			$.mobile.changePage("#details");
-			return;
-		}
-		if (lib.language != qr.language) {
-			$.mobile.loading("show", {
-				text : "loading library for " + qr.language,
-				textVisible: true
-			});	
-			$.getJSON(qr.getLibraryUrl()).done(function(data) {
-				lib.language = qr.language;
-				lib.current = data;
-				lib.prepare(data);
-				showEntry();
-			}).fail(function(foo, mesg) {
-				alert(mesg);
-				console.log(foo);
-			});
-		}
+		checkLanguage(function() {
+			if (lib.language != qr.language) {
+				$.mobile.loading("show", {
+					text : "loading library for " + qr.language,
+					textVisible : true
+				});
+				$.getJSON(qr.getLibraryUrl()).done(function(data) {
+					lib.language = qr.language;
+					lib.current = data;
+					lib.prepare(data);
+					showEntry();
+				}).fail(function(foo, mesg) {
+					alert(mesg);
+					console.log(foo);
+				});
+			}
+		});
 	});
 });
 
 // ------------------- details
 
 $(document).delegate("#details", "pageinit", function() {
-
 	$("#readButton").on('click', function(e) {
 		// are we already reading this title
-		if (!qr.current[qr.title.path]) {			
+		if (!qr.current[qr.title.path]) {
 			dao.addTitle(qr.title);
 		}
 		// read
 		$("#text").load(qr.getPageUrl(), function() {
 			quizRead(qr.paragraph++);
-		});		
+		});
 	});
 
 	$(document).on('pagebeforeshow', '#details', function(e, data) {
-		if (checkState()) {
+		checkTitle(function() {
 			$("#cover_div").load(qr.getCoverUrl());
-		}
+		});
 	});
 });
 
@@ -282,7 +340,9 @@ $(document).delegate("#read", "pageinit", function() {
 	});
 
 	$(document).on('pagebeforeshow', '#read', function(e, data) {
-		checkState();
+		checkTitle(function() {
+			//
+		});
 	});
 });
 
@@ -306,10 +366,10 @@ $(document).delegate("#show_def", "pageinit", function() {
 	});
 
 	$(document).on('pagebeforeshow', '#show_def', function(e, data) {
-		if (checkState()) {
+		checkTitle(function() {
 			defIndex = 1;
 			$("#def_div").html(template(qr.wordList[0]));
-		}
+		});
 	});
 });
 
@@ -336,10 +396,10 @@ $(document).delegate("#quiz", "pageinit", function() {
 	});
 
 	$(document).on('pagebeforeshow', '#quiz', function(e, data) {
-		if (checkState()) {
+		checkTitle(function() {
 			// $("#quiz_set").html(template(defList[0])).controlgroup("refresh");
 			defIndex = 1;
 			showQuiz(qr.wordList[0]);
-		}
+		});
 	});
 });

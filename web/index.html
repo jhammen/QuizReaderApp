@@ -13,30 +13,6 @@
 </head>
 
 <body>
-	<!-- Splash Page -->
-	<div data-role="page" id="splash">
-		<script id="splash_template" type="text/x-handlebars-template">
-			{{#.}}<li><a href="#" data-code="{{code}}">
-					<span>{{name}}</span> <span class="ui-li-aside">{{wordCount}}</span>
-				</a></li>
-			{{else}}
-			{{/.}}
-		</script>
-		<div data-role="header">
-			<h1>QuizReader: Welcome!</h1>
-		</div>
-
-		<div data-role="content">
-			<div id="splash_content">
-				<ul id="language_list" data-role="listview">
-				</ul>
-			</div>
-		</div>
-		<div data-role="footer" data-position="fixed">
-			<h4>X Words Total</h4>
-		</div>
-	</div>
-
 	<div data-role="page" id="current">
 
 		<div data-role="header">
@@ -49,7 +25,8 @@
 				<h2>{{title}}</h2>
 				<p>{{author}}</p>				
 				</a></li>
-			{{else}}No Open Titles		
+			{{else}}
+ 				<li data-role="list-divider">No Open Titles</li>		
 			{{/.}}
 			<li data-icon="plus"><a href="#library">Add Title</a></li>
 		</script>
@@ -182,6 +159,40 @@
 
 		<div data-role="footer" data-position="fixed">
 			<h4>X Words in {{language}}</h4>
+		</div>
+	</div>
+
+	<!-- Add a language Page -->
+	<div data-role="page" id="language_add" data-dialog="true">
+		<script id="add_language_template" type="text/x-handlebars-template">
+ 			<li data-role="list-divider">Please choose a language:</li>
+			{{#.}}<li><a href="#" data-code="{{code}}">
+					<span>{{name}}</span>
+				</a></li>
+			{{else}}
+			{{/.}}
+		</script>
+		<div data-role="content">
+			<ul id="add_language_list" data-role="listview">
+			</ul>
+		</div>
+	</div>
+
+	<!-- Language Choice Page -->
+	<div data-role="page" id="language_choice" data-dialog="true">
+		<script id="language_template" type="text/x-handlebars-template">
+ 			<li data-role="list-divider">Please choose a language:</li>
+			{{#.}}<li><a href="#" data-code="{{code}}">
+					<span>{{name}}</span> <span class="ui-li-aside">{{wordCount}}</span>
+				</a></li>
+			{{else}}
+			{{/.}}
+		</script>
+		<div data-role="content">
+			<div id="language_choice_content">
+				<ul id="language_list" data-role="listview">
+				</ul>
+			</div>
 		</div>
 	</div>
 </body>
