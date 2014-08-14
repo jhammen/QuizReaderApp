@@ -16,23 +16,22 @@
  */
 
 var qr = {
-
+	// data access
 	dao : null,
-
-	languages : null,
-
+	// current language
 	language : null,
-
-	current : {}, // hash of current titles
-
+	// hash of current titles
+	current : {},
+	// currently selected title
 	title : null,
-
 	// section within document
 	section : 1,
 	// paragraph within section
 	paragraph : 1,
-	// 
-	wordList : [],
+	// hash for word counts
+	words : {},
+	// words to show definition
+	defWords : [],
 
 	getBaseUrl : function() {
 		return "/library/es/";
@@ -40,6 +39,11 @@ var qr = {
 
 	getCoverUrl : function() {
 		return this.getBaseUrl() + this.title.path + "/cover.html";
+	},
+
+	getDefinitionUrl : function(word) {
+		var prefix = word.length > 1 ? word.substring(0, 2) : word[0];
+		return this.getBaseUrl() + "def/" + prefix + "/" + word + ".json";
 	},
 
 	getLibraryUrl : function() {
@@ -80,7 +84,6 @@ function checkLanguage(callback) {
 	}
 	return checkDb(function() {
 		qr.dao.getLanguages(function(data) {
-			qr.languages = data;
 			if (data.length > 1) {
 				$.mobile.changePage("#language_choice");
 			} else if (data.length == 0) { // no existing languages
@@ -131,14 +134,25 @@ function quizRead(paragraph) {
 		$("#text > p:nth-of-type(" + paragraph + ") a").each(function(index) {
 			wordMap[$(this).text()] = 1;
 		});
-		qr.wordList = dao.getNewWords(Object.keys(wordMap));
-		console.log("found " + qr.wordList.length + " unique words");
-		// unhide to paragraph in background
-		setTimeout(function() {
-			unhideToParagraph(paragraph);
-		}, 100);
-		// start showing definitions
-		$.mobile.changePage("#show_def");
+		var wordList = Object.keys(wordMap);
+		qr.words = {};
+		var done = 0;
+		for (var i = 0; i < wordList.length; i++) {
+			qr.dao.getWord(wordList[i], function(word, count) {
+				qr.words[word] = count ? count : 0;
+				if (!count) {
+					qr.defWords.push(word);
+				}
+				if (++done == wordList.length) {
+					if (qr.defWords.length > 0) {
+						$.mobile.changePage("#show_def");
+					} else {
+						alert("no defs to show");
+					}
+				}
+			});
+		}
+		unhideToParagraph(paragraph);
 	} else { // next section
 		alert("end of chapter " + qr.section);
 		qr.section++;
@@ -158,7 +172,7 @@ $(document).delegate("#language_add", "pageinit", function() {
 	var source = $("#add_language_template").html();
 	var template = Handlebars.compile(source);
 	$(document).on('pagebeforeshow', '#language_add', function(e, data) {
-		checkLanguage(function() {
+		checkDb(function() {
 			var languages = [ {
 				code : "es",
 				name : "Spanish"
@@ -166,27 +180,30 @@ $(document).delegate("#language_add", "pageinit", function() {
 				code : "fr",
 				name : "French"
 			} ];
-			// turn list into hash of new languages
-			var languageHash = {};
-			for(var i = 0; i < languages.length; i++) {
-				var code = languages[i].code;
-				languageHash[code] = languages[i];
-				for(var j = 0; j < qr.languages.length; j++) {
-					if(code == qr.languages[j].code) {
-						languages[i].inuse = true;
+			qr.dao.getLanguages(function(data) {
+				// turn list into hash of new languages
+				var languageHash = {};
+				for (var i = 0; i < languages.length; i++) {
+					var code = languages[i].code;
+					languageHash[code] = languages[i];
+					for (var j = 0; j < data.length; j++) {
+						if (code == data[j].code) {
+							languages[i].inuse = true;
+						}
 					}
 				}
-			}
-			var list = $("#add_language_list");
-			list.html(template(languages)).listview("refresh");
-			$("a[data-code]", list).on('click', function(e) {
-				qr.language = $(this).data("code");
-				qr.dao.addLanguage({
-					code : qr.language,
-					name : languageHash[qr.language],
-					words : 0
-				}, function() {
-					$.mobile.changePage("#current");
+				var list = $("#add_language_list");
+				console.log(languages);
+				list.html(template(languages)).listview("refresh");
+				$("a[data-code]", list).on('click', function(e) {
+					qr.language = $(this).data("code");
+					qr.dao.addLanguage({
+						code : qr.language,
+						name : languageHash[qr.language],
+						words : 0
+					}, function() {
+						$.mobile.changePage("#current");
+					});
 				});
 			});
 		});
@@ -316,7 +333,7 @@ $(document).delegate("#details", "pageinit", function() {
 	$("#readButton").on('click', function(e) {
 		// are we already reading this title
 		if (!qr.current[qr.title.path]) {
-			dao.addTitle(qr.title);
+			qr.dao.addTitle(qr.title);
 		}
 		// read
 		$("#text").load(qr.getPageUrl(), function() {
@@ -353,13 +370,16 @@ $(document).delegate("#show_def", "pageinit", function() {
 	var source = $("#def_template").html();
 	var template = Handlebars.compile(source);
 
-	var defIndex = 1;
-
+	function showDefinition(word) {
+		$.getJSON(qr.getDefinitionUrl(word)).done(function(data) {
+			$("#def_div").html(template(data));
+		});
+	}
+	
 	// "Next" button
 	$("#nextDefButton").on('click', function(e) {
-		if (defIndex < qr.wordList.length) {
-			// show the next definition
-			$("#def_div").html(template(qr.wordList[defIndex++]));
+		if (qr.defWords.length) {
+			showDefinition(qr.defWords.pop());
 		} else { // we're out of definitions to show
 			$.mobile.changePage("#quiz");
 		}
@@ -367,8 +387,7 @@ $(document).delegate("#show_def", "pageinit", function() {
 
 	$(document).on('pagebeforeshow', '#show_def', function(e, data) {
 		checkTitle(function() {
-			defIndex = 1;
-			$("#def_div").html(template(qr.wordList[0]));
+			showDefinition(qr.defWords.pop());
 		});
 	});
 });
@@ -388,8 +407,8 @@ $(document).delegate("#quiz", "pageinit", function() {
 	var defIndex = 1;
 	// "Next" button
 	$("#nextQuizButton").on('click', function(e) {
-		if (defIndex < qr.wordList.length) {
-			showQuiz(qr.wordList[defIndex++]);
+		if (defIndex < qr.words.length) {
+			showQuiz(qr.words[defIndex++]);
 		} else { // we're done showing quizzes
 			$.mobile.changePage("#read");
 		}
@@ -399,7 +418,7 @@ $(document).delegate("#quiz", "pageinit", function() {
 		checkTitle(function() {
 			// $("#quiz_set").html(template(defList[0])).controlgroup("refresh");
 			defIndex = 1;
-			showQuiz(qr.wordList[0]);
+			showQuiz(qr.words[0]);
 		});
 	});
 });

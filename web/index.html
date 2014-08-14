@@ -114,25 +114,19 @@
 		</div>
 	</div>
 
-	<div data-role="page" id="show_def">
+	<div data-role="page" id="show_def" data-dialog="true">
 		<script id="def_template" type="text/x-handlebars-template">
-		<b>{{word}}</b> <i>n</i>
+		<b>{{word}}</b>
 		<ul>
-			<li>Defintion 1</li>
-			<li>Defintion 2</li>
+			{{#each definitions}}
+			<li><i>{{type}}</i> {{text}}</li>
+			{{/each}}
 		</ul>
 		</script>
-		<div data-role="header">
-			<h1>QuizReader: New Definition</h1>
-		</div>
 
 		<div data-role="content" class="full">
 			<div id="def_div"></div>
 			<button id="nextDefButton">Next</button>
-		</div>
-
-		<div data-role="footer" data-position="fixed">
-			<h4>X Words in {{language}}</h4>
 		</div>
 	</div>
 
