@@ -26,12 +26,10 @@ var qr = {
 	title : null,
 	// section within document
 	section : 1,
-	// paragraph within section
-	paragraph : 1,
-	// hash for word counts
-	words : {},
-	// words to show definition
-	defWords : [],
+	// page elements
+	chunks : [],
+	// words to show quiz
+	quizWords : [],
 
 	getBaseUrl : function() {
 		return "/library/es/";
@@ -107,63 +105,63 @@ function checkTitle(callback) {
 
 // ---------------------- common methods
 
-function unhideToParagraph(paragraph) {
-	// unhide to paragraph
-	var counter = 0;
-	console.log("num top-level items in section file: " + $("#text > *").size());
-	$("#text > *").each(function(index) {
-		$(this).show();
-		if ($(this).is('p') && ++counter == paragraph) {
-			return false; // why?
-		}
-		// if (counter == paragraph - 1) {
-		// $("body").scrollTop($(this).position().top);
-		// }
+function loadSection() {
+
+	var sectionWord = {};
+	// load document and process elements
+	$("#text").load(qr.getPageUrl(), function() {
+		// parent elements of <a> definition tags
+		var elements = $("h1,h2,h3,h4,span,li", $("#text"));
+		var elementsRemaining = elements.length;
+
+		var index = 0;
+		elements.each(function(index) {
+			// chunk object
+			var chunk = qr.chunks[index++] = {
+				words : [],
+				element : this
+			};
+			// collect unique words
+			var elementWord = {};
+			$("a", this).each(function() {
+				var word = $(this).data("word");
+				if (!word) {
+					word = $(this).text();
+				}
+				if (!sectionWord[word]) {
+					sectionWord[word] = elementWord[word] = true;
+				}
+			});
+			// lookup collected words
+			var remaining = Object.keys(elementWord).length;
+			if (!remaining && !--elementsRemaining) {
+				quizRead();
+			}
+			for (lookupWord in elementWord) {
+				qr.dao.getWord(lookupWord, function(word, count) {
+					if (!count) {
+						chunk.words.push(word);
+					}
+					if (!--remaining && !--elementsRemaining) {
+						quizRead();
+					}
+				});
+			}
+		});
 	});
 }
 
-function quizRead(paragraph) {
-	// check we haven't gone past the end
-	if ($("p:nth-of-type(" + paragraph + ")").length > 0) {
-		$.mobile.loading("show", {
-			text : "finding words in paragraph " + paragraph,
-			textVisible : true
-		});
-		// grab all words for the current paragraph
-		var wordMap = {};
-		$("#text > p:nth-of-type(" + paragraph + ") a").each(function(index) {
-			wordMap[$(this).text()] = 1;
-		});
-		var wordList = Object.keys(wordMap);
-		qr.words = {};
-		var done = 0;
-		for (var i = 0; i < wordList.length; i++) {
-			qr.dao.getWord(wordList[i], function(word, count) {
-				qr.words[word] = count ? count : 0;
-				if (!count) {
-					qr.defWords.push(word);
-				}
-				if (++done == wordList.length) {
-					if (qr.defWords.length > 0) {
-						$.mobile.changePage("#show_def");
-					} else {
-						alert("no defs to show");
-					}
-				}
-			});
+function quizRead() {
+	while (qr.quizWords.length < 5) {
+		if (!qr.chunks.length) {
+			qr.section++;
+			return loadSection();
 		}
-		unhideToParagraph(paragraph);
-	} else { // next section
-		alert("end of chapter " + qr.section);
-		qr.section++;
-		qr.paragraph = 1;
-		$.mobile.loading("show", {
-			text : "loading chapter " + qr.section
-		});
-		$("#text").load(qr.getPageUrl(), function() {
-			quizRead(qr.paragraph++);
-		});
+		var chunk = qr.chunks.shift();
+		$(chunk.element).show();
+		qr.quizWords = qr.quizWords.concat(chunk.words);
 	}
+	$.mobile.changePage("#show_def");
 }
 
 // ---------------------- language add
@@ -336,9 +334,7 @@ $(document).delegate("#details", "pageinit", function() {
 			qr.dao.addTitle(qr.title);
 		}
 		// read
-		$("#text").load(qr.getPageUrl(), function() {
-			quizRead(qr.paragraph++);
-		});
+		loadSection();
 	});
 
 	$(document).on('pagebeforeshow', '#details', function(e, data) {
@@ -353,7 +349,7 @@ $(document).delegate("#details", "pageinit", function() {
 $(document).delegate("#read", "pageinit", function() {
 
 	$("#moreButton").on('click', function(e) {
-		quizRead(qr.paragraph++);
+		quizRead();
 	});
 
 	$(document).on('pagebeforeshow', '#read', function(e, data) {
@@ -370,24 +366,27 @@ $(document).delegate("#show_def", "pageinit", function() {
 	var source = $("#def_template").html();
 	var template = Handlebars.compile(source);
 
+	var defIndex = 1;
+
 	function showDefinition(word) {
 		$.getJSON(qr.getDefinitionUrl(word)).done(function(data) {
 			$("#def_div").html(template(data));
 		});
 	}
-	
+
 	// "Next" button
 	$("#nextDefButton").on('click', function(e) {
-		if (qr.defWords.length) {
-			showDefinition(qr.defWords.pop());
+		if (defIndex < qr.quizWords.length) {
+			showDefinition(qr.quizWords[defIndex++]);
 		} else { // we're out of definitions to show
 			$.mobile.changePage("#quiz");
+			defIndex = 1;
 		}
 	});
 
 	$(document).on('pagebeforeshow', '#show_def', function(e, data) {
 		checkTitle(function() {
-			showDefinition(qr.defWords.pop());
+			showDefinition(qr.quizWords[0]);
 		});
 	});
 });
@@ -396,19 +395,19 @@ $(document).delegate("#show_def", "pageinit", function() {
 
 $(document).delegate("#quiz", "pageinit", function() {
 
-	function showQuiz(obj) {
-		// show the next definition
-		$("#quiz_def").text(obj.word);
-		$("#quiz_answer1").text(obj.word);
-		$("#quiz_answer2").text(obj.word);
-		$("#quiz_answer3").text(obj.word);
+	function showQuiz(word1, word2, word3) {
+		$.getJSON(qr.getDefinitionUrl(word1)).done(function(data) {
+			$("#quiz_def").text(data.definitions[0].text);
+			$("#quiz_answer1").text(word1);
+			$("#quiz_answer2").text(word2);
+			$("#quiz_answer3").text(word3);
+		});
 	}
 
-	var defIndex = 1;
 	// "Next" button
 	$("#nextQuizButton").on('click', function(e) {
-		if (defIndex < qr.words.length) {
-			showQuiz(qr.words[defIndex++]);
+		if (qr.quizWords.length) {
+			showQuiz(qr.quizWords.pop());
 		} else { // we're done showing quizzes
 			$.mobile.changePage("#read");
 		}
@@ -416,9 +415,8 @@ $(document).delegate("#quiz", "pageinit", function() {
 
 	$(document).on('pagebeforeshow', '#quiz', function(e, data) {
 		checkTitle(function() {
-			// $("#quiz_set").html(template(defList[0])).controlgroup("refresh");
-			defIndex = 1;
-			showQuiz(qr.words[0]);
+			// TODO: shuffle quizwords?
+			showQuiz(qr.quizWords.pop());
 		});
 	});
 });

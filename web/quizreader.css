@@ -75,7 +75,7 @@
 
 a { color: inherit; text-decoration: none;} 
 
-#text > * {
+#text h1, #text h2, #text h3, #text h4, #text span, #text li {
 	display: none;
 }
 

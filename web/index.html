@@ -120,6 +120,8 @@
 		<ul>
 			{{#each definitions}}
 			<li><i>{{type}}</i> {{text}}</li>
+			{{else}}
+			[No definition available]
 			{{/each}}
 		</ul>
 		</script>
@@ -130,10 +132,7 @@
 		</div>
 	</div>
 
-	<div data-role="page" id="quiz">
-		<div data-role="header">
-			<h1>QuizReader: Quiz</h1>
-		</div>
+	<div data-role="page" id="quiz" data-dialog="true">
 		<div id="quiz_content" data-role="content" class="full">
 			<form>
 				<fieldset id="quiz_set" data-role="controlgroup">
@@ -149,10 +148,6 @@
 				</fieldset>
 			</form>
 			<button id="nextQuizButton">Next</button>
-		</div>
-
-		<div data-role="footer" data-position="fixed">
-			<h4>X Words in {{language}}</h4>
 		</div>
 	</div>
 
