@@ -28,8 +28,10 @@ var qr = {
 	section : 1,
 	// page elements
 	chunks : [],
-	// words to show quiz
-	quizWords : [],
+	// words to show definitions
+	defWords : [],
+	// definitions to show quizzes
+	quizzes : [],
 
 	getBaseUrl : function() {
 		return "/library/es/";
@@ -152,14 +154,14 @@ function loadSection() {
 }
 
 function quizRead() {
-	while (qr.quizWords.length < 5) {
+	while (qr.defWords.length < 5) {
 		if (!qr.chunks.length) {
 			qr.section++;
 			return loadSection();
 		}
 		var chunk = qr.chunks.shift();
 		$(chunk.element).show();
-		qr.quizWords = qr.quizWords.concat(chunk.words);
+		qr.defWords = qr.defWords.concat(chunk.words);
 	}
 	$.mobile.changePage("#show_def");
 }
@@ -366,27 +368,67 @@ $(document).delegate("#show_def", "pageinit", function() {
 	var source = $("#def_template").html();
 	var template = Handlebars.compile(source);
 
-	var defIndex = 1;
-
-	function showDefinition(word) {
-		$.getJSON(qr.getDefinitionUrl(word)).done(function(data) {
+	function showDefinition(data) {
+		// update in dao
+		qr.dao.updateWord(data.word, 1, function() {
 			$("#def_div").html(template(data));
+			// qr.quizzes.push(entry);
+			qr.defWords.shift();
 		});
+	}
+
+	function showFailure(xhr) {
+		$("#def_div").html(template({
+			word : xhr.status,
+			definitions : [ {
+				text : xhr.statusText
+			} ]
+		}));
+		qr.defWords.shift();
+	}
+
+	function getRoot(data) {
+		return data.definitions[0] ? data.definitions[0].root : null;
+	}
+
+	function nextDefinition() {
+		if (qr.defWords.length) {
+			$.getJSON(qr.getDefinitionUrl(qr.defWords[0])).done(function(data) {
+				// check for root
+				var root = getRoot(data);
+				if (root) { // lookup root to see if known
+					qr.dao.getWord(root, function(root, count) {
+						if (!count) { // show root def if unknown
+							$.getJSON(qr.getDefinitionUrl(root)).done(function(data) {
+								qr.defWords.unshift(root);
+								showDefinition(data);
+							}).fail(function(xhr) {
+								showFailure(xhr);
+							});
+						} else {
+							showDefinition(data);
+						}
+					});
+				} else {
+					showDefinition(data);
+				}
+			}).fail(function(xhr) {
+				showFailure(xhr);
+			});
+		} else { // we're out of definitions to show
+			$.mobile.changePage("#quiz");
+		}
 	}
 
 	// "Next" button
 	$("#nextDefButton").on('click', function(e) {
-		if (defIndex < qr.quizWords.length) {
-			showDefinition(qr.quizWords[defIndex++]);
-		} else { // we're out of definitions to show
-			$.mobile.changePage("#quiz");
-			defIndex = 1;
-		}
+		nextDefinition();
+
 	});
 
 	$(document).on('pagebeforeshow', '#show_def', function(e, data) {
 		checkTitle(function() {
-			showDefinition(qr.quizWords[0]);
+			nextDefinition();
 		});
 	});
 });
@@ -395,28 +437,29 @@ $(document).delegate("#show_def", "pageinit", function() {
 
 $(document).delegate("#quiz", "pageinit", function() {
 
-	function showQuiz(word1, word2, word3) {
-		$.getJSON(qr.getDefinitionUrl(word1)).done(function(data) {
-			$("#quiz_def").text(data.definitions[0].text);
+	function showQuiz() {
+		if (qr.quizzes.length) {
+			var entry = qr.quizzes.pop();
+			var word1 = entry.word;
+			var word2 = "other words";
+			var word3 = "alt word";
+			$("#quiz_def").text(entry.definitions[0].text);
 			$("#quiz_answer1").text(word1);
 			$("#quiz_answer2").text(word2);
 			$("#quiz_answer3").text(word3);
-		});
+		} else { // we're done showing quizzes
+			$.mobile.changePage("#read");
+		}
 	}
 
 	// "Next" button
 	$("#nextQuizButton").on('click', function(e) {
-		if (qr.quizWords.length) {
-			showQuiz(qr.quizWords.pop());
-		} else { // we're done showing quizzes
-			$.mobile.changePage("#read");
-		}
+		showQuiz();
 	});
 
 	$(document).on('pagebeforeshow', '#quiz', function(e, data) {
 		checkTitle(function() {
-			// TODO: shuffle quizwords?
-			showQuiz(qr.quizWords.pop());
+			showQuiz();
 		});
 	});
 });

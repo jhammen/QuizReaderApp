@@ -122,6 +122,15 @@ var indexeddao = {
 		request.onsuccess = function() {
 			callback(word, request.result);
 		};
+	},
+	
+	updateWord : function(word, value, callback) {
+		var transaction = this.db.transaction("words", "readwrite");
+		var wordStore = transaction.objectStore("words");
+		var request = wordStore.put(value, word);
+		request.onsuccess = function(event) {				
+			return callback();
+		};
 	}
 };
 
