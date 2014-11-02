@@ -49,17 +49,13 @@
 		<script id="library_template" type="text/x-handlebars-template">
 			{{#if lib.parent}}
 			<li><a href="#" data-parent="true">
-				<img src="{{../libpath}}folder.png">
-				<h2>Up</h2>
-				<p>{{desc}}</p>
+				<img src="img/folder.png" class="ui-li-icon">Up
 			</a></li>
 			{{/if}}
 			{{#each lib}}<li>
 			{{#if name}}
 				<a href="#" data-index="{{@index}}">
-					<img src="{{../../libpath}}folder.png">
-					<h2>{{name}}</h2>
-					<p>{{desc}}</p>		
+					<img src="img/folder.png" class="ui-li-icon">{{name}}
 				</a>
 			{{else}}
 				<a href="#" data-path="{{path}}">
@@ -128,7 +124,7 @@
 
 		<div data-role="content" class="full">
 			<div id="def_div"></div>
-			<button id="nextDefButton">Next</button>
+			<button id="nextDefButton">OK</button>
 		</div>
 	</div>
 
@@ -182,6 +178,17 @@
 				<ul id="language_list" data-role="listview">
 				</ul>
 			</div>
+		</div>
+	</div>
+
+	<!-- Credits Page -->
+	<div data-role="page" id="credits">
+		<div data-role="content" class="full">
+			Many thanks to:
+			<ul>
+				<li><a href="http://tango.freedesktop.org">Tango Desktop
+						Project</a> - public domain icon library</li>
+			</ul>
 		</div>
 	</div>
 </body>
