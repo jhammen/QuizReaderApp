@@ -12,7 +12,7 @@ var indexeddao = {
 
 	open : function(callback) {
 		var self = this;
-		var request = indexedDB.open("MyTestDatabase");
+		var request = window.indexedDB.open("TestFFDatabase");
 		request.onerror = function(event) {
 			alert("cannot open IndexedDB");
 			console.log(event);
@@ -135,5 +135,40 @@ var indexeddao = {
 };
 
 var memorydao = {
+		languages : [],
+		
+		titles : [],
+		
+		level : {},
+		
+		addLanguage : function(language, callback) {
+			this.languages.push(language);
+			callback();
+		},
 
+		getLanguages : function(callback) {
+			callback(this.languages);
+		},
+		
+		addTitle : function(title) {
+			this.titles.push(title);
+		},		
+		
+		getOpenTitles : function(callback) {			
+			callback(this.titles);
+		},
+		
+		addWord : function(word, callback) {
+			this.level[word] = 0;
+			return callback();
+		},
+
+		getWord : function(word, callback) {
+			callback(word, this.level[word]);
+		},
+		
+		updateWord : function(word, value, callback) {
+			this.level[word] = value;
+			return callback();
+		}
 };
