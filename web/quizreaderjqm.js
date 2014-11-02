@@ -34,7 +34,7 @@ var qr = {
 	quizzes : [],
 
 	getBaseUrl : function() {
-		return "/library/es/";
+		return "/lib" + this.language + "/";
 	},
 
 	getCoverUrl : function() {
@@ -51,7 +51,11 @@ var qr = {
 	},
 
 	getPageUrl : function() {
-		return this.getBaseUrl() + this.title.path + "/t00" + this.section + ".html";
+		var name = '' + this.section;
+		while (name.length < 3) {
+			name = "0" + name;
+		}
+		return this.getBaseUrl() + this.title.path + "/t" + name + ".html";
 	}
 };
 
@@ -118,7 +122,7 @@ function loadSection() {
 
 		var index = 0;
 		elements.each(function(index) {
-			// chunk object
+			// start new chunk object
 			var chunk = qr.chunks[index++] = {
 				words : [],
 				element : this
@@ -133,6 +137,11 @@ function loadSection() {
 				if (!sectionWord[word]) {
 					sectionWord[word] = elementWord[word] = true;
 				}
+				// add link
+				$(this).click(function() {
+					qr.defWords.push(word);
+					$.mobile.changePage("#show_def");
+				});
 			});
 			// lookup collected words
 			var remaining = Object.keys(elementWord).length;
@@ -179,6 +188,9 @@ $(document).delegate("#language_add", "pageinit", function() {
 			}, {
 				code : "fr",
 				name : "French"
+			}, {
+				code : "de",
+				name : "German"
 			} ];
 			qr.dao.getLanguages(function(data) {
 				// turn list into hash of new languages
@@ -309,10 +321,10 @@ $(document).delegate("#library", "pageinit", function() {
 	$(document).on('pagebeforeshow', '#library', function(e, data) {
 		checkLanguage(function() {
 			if (lib.language != qr.language) {
-				$.mobile.loading("show", {
-					text : "loading library for " + qr.language,
-					textVisible : true
-				});
+				// $.mobile.loading("show", {
+				// text : "loading library for " + qr.language,
+				// textVisible : true
+				// });
 				$.getJSON(qr.getLibraryUrl()).done(function(data) {
 					lib.language = qr.language;
 					lib.current = data;
@@ -416,7 +428,11 @@ $(document).delegate("#show_def", "pageinit", function() {
 				showFailure(xhr);
 			});
 		} else { // we're out of definitions to show
-			$.mobile.changePage("#quiz");
+			if (qr.quizzes.length) {
+				$.mobile.changePage("#quiz");
+			} else { // we're done showing quizzes
+				$.mobile.changePage("#read");
+			}
 		}
 	}
 
