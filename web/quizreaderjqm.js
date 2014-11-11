@@ -111,6 +111,25 @@ function checkTitle(callback) {
 
 // ---------------------- common methods
 
+
+
+function popupDef(jqelem, word) {
+	
+	var source = $("#popup_def_template").html();
+	var template = Handlebars.compile(source);
+	
+	$.getJSON(qr.getDefinitionUrl(word)).done(function(data) {
+		qr.dao.updateWord(data.word, 1, function() {
+			$("#popup_def_content").html(template(data));
+			var pos = jqelem.position();
+			$("#popup_def").popup("open", {
+				x : pos.left + jqelem.width() / 2,
+				y : pos.top + jqelem.height()
+			});
+		});
+	});
+}
+
 function loadSection() {
 
 	var sectionWord = {};
@@ -138,9 +157,9 @@ function loadSection() {
 					sectionWord[word] = elementWord[word] = true;
 				}
 				// add link
-				$(this).click(function() {
-					qr.defWords.push(word);
-					$.mobile.changePage("#show_def");
+				$(this).click(function(evt) {
+					popupDef($(this), word);
+					evt.preventDefault();
 				});
 			});
 			// lookup collected words
@@ -163,7 +182,7 @@ function loadSection() {
 }
 
 function quizRead() {
-	while (qr.defWords.length < 5) {
+	while (qr.defWords.length < 3) {
 		if (!qr.chunks.length) {
 			qr.section++;
 			return loadSection();

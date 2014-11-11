@@ -104,9 +104,19 @@
 			<div id="text"></div>
 			<button id="moreButton">More</button>
 		</div>
-
-		<div data-role="footer" data-position="fixed">
-			<h4>X Words in {{language}}</h4>
+		
+		<script id="popup_def_template" type="text/x-handlebars-template">
+		<b>{{word}}</b>
+		<ul>
+			{{#each definitions}}
+			<li><i>{{type}}</i> {{text}}</li>
+			{{else}}
+			[No definition available]
+			{{/each}}
+		</ul>
+		</script>
+		<div data-role="popup" id="popup_def" data-arrow="t">
+			<div id="popup_def_content"></div>			
 		</div>
 	</div>
 
