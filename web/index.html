@@ -104,9 +104,8 @@
 			<div id="text"></div>
 			<button id="moreButton">More</button>
 		</div>
-		
+
 		<script id="popup_def_template" type="text/x-handlebars-template">
-		<b>{{word}}</b>
 		<ul>
 			{{#each definitions}}
 			<li><i>{{type}}</i> {{text}}</li>
@@ -116,7 +115,16 @@
 		</ul>
 		</script>
 		<div data-role="popup" id="popup_def" data-arrow="t">
-			<div id="popup_def_content"></div>			
+			<div data-role="tabs">
+				<div data-role="navbar">
+					<ul>
+						<li><a id="popup_word1" href="#popup_def1">One</a></li>
+						<li><a id="popup_word2" href="#popup_def2">Two</a></li>
+					</ul>
+				</div>
+				<div id="popup_def1"></div>
+				<div id="popup_def2"></div>
+			</div>
 		</div>
 	</div>
 
@@ -187,6 +195,27 @@
 			<div id="language_choice_content">
 				<ul id="language_list" data-role="listview">
 				</ul>
+			</div>
+		</div>
+	</div>
+
+	<!-- Error Page -->
+	<div data-role="page" id="error" data-dialog="true">
+		<script id="error_template" type="text/x-handlebars-template">
+			Error {{status}}: {{statusText}}
+		</script>
+		<div data-role="header">
+			<h1>Error</h1>
+		</div>
+		<div data-role="content" class="full">
+			<div id="error_div">
+				<table>
+					<tr>
+						<td><img src="img/error.png" /></td>
+						<td id="error_cell"></td>
+					</tr>
+				</table>
+				<a class="ui-btn" data-rel="back" href="#">OK</a>
 			</div>
 		</div>
 	</div>

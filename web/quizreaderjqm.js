@@ -111,21 +111,59 @@ function checkTitle(callback) {
 
 // ---------------------- common methods
 
+function showError(xhr) {
+	var source = $("#error_template").html();
+	var template = Handlebars.compile(source);
+	$("#error_cell").html(template(xhr));
+	$.mobile.changePage("#error");
+}
 
+function getJSON(url, callback) {
+	$.getJSON(url).done(function(data) {
+		callback(data);
+	}).fail(function(xhr) {
+		showError(xhr);
+	});
+}
 
-function popupDef(jqelem, word) {
-	
+function getRoot(data) {
+	return data.definitions[0] ? data.definitions[0].root : null;
+}
+
+function popupDef(jqelem, data, root) {
 	var source = $("#popup_def_template").html();
 	var template = Handlebars.compile(source);
+
+	if(root) {
+		$("#popup_word1").text(root.word);
+		$("#popup_def1").html(template(root));		
+		$("#popup_word2").text(data.word);
+		$("#popup_def2").html(template(data));		
+	} else {
+		$("#popup_word1").text(data.word);
+		$("#popup_def1").html(template(data));
+		$("#popup_word2").text("");
+		$("#popup_def2").html("");		
+	}
 	
-	$.getJSON(qr.getDefinitionUrl(word)).done(function(data) {
-		qr.dao.updateWord(data.word, 1, function() {
-			$("#popup_def_content").html(template(data));
-			var pos = jqelem.position();
-			$("#popup_def").popup("open", {
-				x : pos.left + jqelem.width() / 2,
-				y : pos.top + jqelem.height()
-			});
+	var pos = jqelem.position();
+	$("#popup_def").popup("open", {
+		x : pos.left + jqelem.width() / 2,
+		y : pos.top + jqelem.height()
+	});
+}
+
+function showDefinition(jqelem, word) {
+	qr.dao.updateWord(word, 1, function() {
+		getJSON(qr.getDefinitionUrl(word), function(data) {
+			var root = getRoot(data);
+			if (root) {
+				getJSON(qr.getDefinitionUrl(root), function(rdata) {
+					popupDef(jqelem, data, rdata);
+				});
+			} else {
+				popupDef(jqelem, data, null);
+			}
 		});
 	});
 }
@@ -158,7 +196,7 @@ function loadSection() {
 				}
 				// add link
 				$(this).click(function(evt) {
-					popupDef($(this), word);
+					showDefinition($(this), word);
 					evt.preventDefault();
 				});
 			});
@@ -404,37 +442,22 @@ $(document).delegate("#show_def", "pageinit", function() {
 		qr.dao.updateWord(data.word, 1, function() {
 			$("#def_div").html(template(data));
 			// qr.quizzes.push(entry);
-			qr.defWords.shift();
 		});
-	}
-
-	function showFailure(xhr) {
-		$("#def_div").html(template({
-			word : xhr.status,
-			definitions : [ {
-				text : xhr.statusText
-			} ]
-		}));
-		qr.defWords.shift();
-	}
-
-	function getRoot(data) {
-		return data.definitions[0] ? data.definitions[0].root : null;
 	}
 
 	function nextDefinition() {
 		if (qr.defWords.length) {
-			$.getJSON(qr.getDefinitionUrl(qr.defWords[0])).done(function(data) {
+			var word = qr.defWords.shift();
+			getJSON(qr.getDefinitionUrl(word), function(data) {
 				// check for root
 				var root = getRoot(data);
-				if (root) { // lookup root to see if known
+				if (root) {
+					// lookup root to see if known
 					qr.dao.getWord(root, function(root, count) {
 						if (!count) { // show root def if unknown
-							$.getJSON(qr.getDefinitionUrl(root)).done(function(data) {
-								qr.defWords.unshift(root);
+							getJSON(qr.getDefinitionUrl(root), function(data) {
+								qr.defWords.unshift(word);
 								showDefinition(data);
-							}).fail(function(xhr) {
-								showFailure(xhr);
 							});
 						} else {
 							showDefinition(data);
@@ -443,8 +466,6 @@ $(document).delegate("#show_def", "pageinit", function() {
 				} else {
 					showDefinition(data);
 				}
-			}).fail(function(xhr) {
-				showFailure(xhr);
 			});
 		} else { // we're out of definitions to show
 			if (qr.quizzes.length) {
