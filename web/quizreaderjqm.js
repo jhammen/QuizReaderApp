@@ -182,6 +182,7 @@ function loadSection() {
 			// start new chunk object
 			var chunk = qr.chunks[index++] = {
 				words : [],
+				quizzes : [],
 				element : this
 			};
 			// collect unique words
@@ -210,6 +211,9 @@ function loadSection() {
 					if (!count) {
 						chunk.words.push(word);
 					}
+					if (count < 2) {
+						chunk.quizzes.push(word);
+					}
 					if (!--remaining && !--elementsRemaining) {
 						quizRead();
 					}
@@ -220,16 +224,22 @@ function loadSection() {
 }
 
 function quizRead() {
-	while (qr.defWords.length < 3) {
-		if (!qr.chunks.length) {
-			qr.section++;
-			return loadSection();
-		}
+	if (!qr.chunks.length) {
+		qr.section++;
+		return loadSection();
+	}
+	while (qr.chunks.length && qr.quizzes.length < 3) {
 		var chunk = qr.chunks.shift();
+		// TODO: break if element has different parent
 		$(chunk.element).show();
+		qr.quizzes = qr.quizzes.concat(chunk.quizzes);
 		qr.defWords = qr.defWords.concat(chunk.words);
 	}
-	$.mobile.changePage("#show_def");
+	if (qr.defWords.length) {
+		$.mobile.changePage("#show_def");
+	} else if (qr.quizzes.length) {
+		$.mobile.changePage("#quiz");
+	}
 }
 
 // ---------------------- language add
@@ -441,7 +451,6 @@ $(document).delegate("#show_def", "pageinit", function() {
 		// update in dao
 		qr.dao.updateWord(data.word, 1, function() {
 			$("#def_div").html(template(data));
-			qr.quizzes.push(data);
 		});
 	}
 
@@ -508,30 +517,55 @@ $(document).delegate("#quiz", "pageinit", function() {
 		}
 	}
 
-	function showQuiz() {
+	function showQuiz(entry) {
+		// clear quiz form
+		$("label").text("");
+		$("label").removeClass("correct").removeClass("incorrect");
+		$("input:radio").removeAttr('checked');
+		$("input:radio").checkboxradio('refresh');
+		$("input:radio").checkboxradio('enable');
+		$("#quiz_def").text(entry.definitions[0].text);
+		$("#nextQuizButton").button('disable');
+		// add new quiz
+		var roll = Math.floor(Math.random() * 3) + 1;
+		correctOption = "answer" + roll;
+		labelFor(correctOption).text(entry.word);
+		nextLabel().text("wrong ans1");
+		nextLabel().text("wrong ans2");
+	}
+
+	function nextQuiz() {
 		// get next entry
-		while (qr.quizzes.length) {
-			var entry = qr.quizzes.pop();
-			if (entry.definitions[0]) {
-				// clear quiz form
-				$("label").text("");
-				$("label").removeClass("correct").removeClass("incorrect");
-				$("input:radio").removeAttr('checked');
-				$("input:radio").checkboxradio('refresh');
-				$("input:radio").checkboxradio('enable');
-				$("#quiz_def").text(entry.definitions[0].text);
-				$("#nextQuizButton").button('disable');
-				// add new quiz
-				var roll = Math.floor(Math.random() * 3) + 1;
-				correctOption = "answer" + roll;
-				labelFor(correctOption).text(entry.word);
-				nextLabel().text("wrong ans1");
-				nextLabel().text("wrong ans2");
-				return;
-			}
+		if (qr.quizzes.length) {
+			var word = qr.quizzes.pop();
+			getJSON(qr.getDefinitionUrl(word), function(entry) {
+				// check for root
+				var root = getRoot(entry);
+				if (root) {
+					// lookup root to see if known
+					qr.dao.getWord(root, function(root, count) {
+						if (count < 2) { // show root quiz
+							getJSON(qr.getDefinitionUrl(root), function(data) {
+								if (data.definitions[0]) {
+									qr.quizzes.push(word);
+									showQuiz(data);
+								} else {
+									showQuiz(entry);
+								}
+							});
+						} else {
+							showQuiz(entry);
+						}
+					});
+				} else if (entry.definitions[0]) {
+					showQuiz(entry);
+				} else {
+					nextQuiz();
+				}
+			});
+		} else { // out of quizzes, close dialog
+			$.mobile.changePage("#read");
 		}
-		// out of quizzes, close dialog
-		$.mobile.changePage("#read");
 	}
 
 	// radio button click handler
@@ -559,7 +593,7 @@ $(document).delegate("#quiz", "pageinit", function() {
 					// end or continue count
 					if (countdown-- == 0) {
 						$("#nextQuizButton").val("Next");
-						showQuiz();
+						nextQuiz();
 					} else {
 						setTimeout(timer, 1000);
 					}
@@ -571,12 +605,12 @@ $(document).delegate("#quiz", "pageinit", function() {
 
 	// "Next" button
 	$("#nextQuizButton").on('click', function(e) {
-		showQuiz();
+		nextQuiz();
 	});
 
 	$(document).on('pagebeforeshow', '#quiz', function(e, data) {
 		checkTitle(function() {
-			showQuiz();
+			nextQuiz();
 		});
 	});
 });
