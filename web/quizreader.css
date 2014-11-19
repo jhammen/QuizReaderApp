@@ -10,18 +10,6 @@
 	font-weight: bold;
 }
 
-#nextQuiz {
-	display: none;
-}
-
-.correct {
-	background-color: green;
-}
-
-.incorrect {
-	background-color: red;
-}
-
 #greyDiv {
 	position: absolute;
 	top: 0;
@@ -89,3 +77,20 @@ a { color: inherit; text-decoration: none;}
 #error_div td {
 	padding: 5px;
 }
+
+#quiz_set .ui-radio {
+	opacity: 1.0;
+}
+
+#quiz_set .correct {
+	background-color: green;
+	text-shadow: none;
+	color: white;
+}
+
+#quiz_set .incorrect {
+	background-color: red;
+	text-shadow: none;
+	color: white;
+}
+

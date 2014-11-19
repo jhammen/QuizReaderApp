@@ -134,18 +134,18 @@ function popupDef(jqelem, data, root) {
 	var source = $("#popup_def_template").html();
 	var template = Handlebars.compile(source);
 
-	if(root) {
+	if (root) {
 		$("#popup_word1").text(root.word);
-		$("#popup_def1").html(template(root));		
+		$("#popup_def1").html(template(root));
 		$("#popup_word2").text(data.word);
-		$("#popup_def2").html(template(data));		
+		$("#popup_def2").html(template(data));
 	} else {
 		$("#popup_word1").text(data.word);
 		$("#popup_def1").html(template(data));
 		$("#popup_word2").text("");
-		$("#popup_def2").html("");		
+		$("#popup_def2").html("");
 	}
-	
+
 	var pos = jqelem.position();
 	$("#popup_def").popup("open", {
 		x : pos.left + jqelem.width() / 2,
@@ -441,7 +441,7 @@ $(document).delegate("#show_def", "pageinit", function() {
 		// update in dao
 		qr.dao.updateWord(data.word, 1, function() {
 			$("#def_div").html(template(data));
-			// qr.quizzes.push(entry);
+			qr.quizzes.push(data);
 		});
 	}
 
@@ -493,20 +493,81 @@ $(document).delegate("#show_def", "pageinit", function() {
 
 $(document).delegate("#quiz", "pageinit", function() {
 
-	function showQuiz() {
-		if (qr.quizzes.length) {
-			var entry = qr.quizzes.pop();
-			var word1 = entry.word;
-			var word2 = "other words";
-			var word3 = "alt word";
-			$("#quiz_def").text(entry.definitions[0].text);
-			$("#quiz_answer1").text(word1);
-			$("#quiz_answer2").text(word2);
-			$("#quiz_answer3").text(word3);
-		} else { // we're done showing quizzes
-			$.mobile.changePage("#read");
+	var correctOption;
+
+	function labelFor(input) {
+		return $("label[for='" + input + "']");
+	}
+
+	function nextLabel() {
+		for (var i = 1; i <= 3; i++) {
+			var label = labelFor("answer" + i);
+			if (label.text().length == 0) {
+				return label;
+			}
 		}
 	}
+
+	function showQuiz() {
+		// get next entry
+		while (qr.quizzes.length) {
+			var entry = qr.quizzes.pop();
+			if (entry.definitions[0]) {
+				// clear quiz form
+				$("label").text("");
+				$("label").removeClass("correct").removeClass("incorrect");
+				$("input:radio").removeAttr('checked');
+				$("input:radio").checkboxradio('refresh');
+				$("input:radio").checkboxradio('enable');
+				$("#quiz_def").text(entry.definitions[0].text);
+				$("#nextQuizButton").button('disable');
+				// add new quiz
+				var roll = Math.floor(Math.random() * 3) + 1;
+				correctOption = "answer" + roll;
+				labelFor(correctOption).text(entry.word);
+				nextLabel().text("wrong ans1");
+				nextLabel().text("wrong ans2");
+				return;
+			}
+		}
+		// out of quizzes, close dialog
+		$.mobile.changePage("#read");
+	}
+
+	// radio button click handler
+	$("input:radio").click(function(e) {
+		// disable form and enable next button
+		$("input:radio").checkboxradio('disable')
+		$("#nextQuizButton").button('enable');
+		// style the correct answer
+		labelFor(correctOption).addClass("correct");
+		if (this.id != correctOption) {
+			// style bad answer incorrect
+			labelFor(this.id).addClass("incorrect");
+			// reshuffle
+			qr.quizzes.sort(function(a, b) {
+				return Math.random() > 0.5 ? -1 : 1;
+			});
+		} else {
+			// update word level
+			qr.dao.updateWord(labelFor(this.id).text(), 2, function() {
+				// auto-increment to next quiz
+				var countdown = 3;
+				(function timer() {
+					// show countdown in button
+					$("#nextQuizButton").val("Next (" + countdown + ")");
+					// end or continue count
+					if (countdown-- == 0) {
+						$("#nextQuizButton").val("Next");
+						showQuiz();
+					} else {
+						setTimeout(timer, 1000);
+					}
+					$("#nextQuizButton").button("refresh");
+				}());
+			});
+		}
+	});
 
 	// "Next" button
 	$("#nextQuizButton").on('click', function(e) {
