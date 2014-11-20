@@ -115,6 +115,22 @@ var indexeddao = {
 		};
 	},
 
+	getWordCount : function(callback) {
+		var transaction = this.db.transaction("words", "readonly");
+		var wordStore = transaction.objectStore("words");
+		var count = 0;
+		wordStore.openCursor().onsuccess = function(event) {
+			var result = event.target.result;
+			if(result) {				
+				++count;
+				result.continue();
+			}
+			else { 
+				callback(count);
+			}
+		};
+	},
+	
 	getWord : function(word, callback) {
 		var transaction = this.db.transaction("words", "readonly");
 		var wordStore = transaction.objectStore("words");
@@ -123,6 +139,38 @@ var indexeddao = {
 			callback(word, request.result);
 		};
 	},
+	
+	getWordAtIndex : function(index, callback) {
+		var transaction = this.db.transaction("words", "readonly");
+		var wordStore = transaction.objectStore("words");
+		var count = 0;
+		wordStore.openCursor().onsuccess = function(event) {
+			var result = event.target.result;
+			if(count++ == index) {
+				callback(result.key);
+			} else if (!result) {
+				callback(null);
+			}
+			else {
+				result.continue();				
+			}
+		};
+	},
+	
+	getAllWords : function(callback) {
+		var transaction = this.db.transaction("words", "readonly");
+		var wordStore = transaction.objectStore("words");
+		var words = [];
+		wordStore.openCursor().onsuccess = function(event) {
+			var cursor = event.target.result;
+			if (cursor) {
+				words.push({"word" : cursor.key, "level" : cursor.value});
+				cursor.continue();
+			} else {
+				callback(words);
+			}
+		};
+	},	
 	
 	updateWord : function(word, value, callback) {
 		var transaction = this.db.transaction("words", "readwrite");

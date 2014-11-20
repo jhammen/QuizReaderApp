@@ -68,17 +68,19 @@ Handlebars.registerHelper("libpath", function() {
 
 function checkDb(callback) {
 	if (qr.dao) {
-		return callback();
+		callback();
 	}
-	if (indexeddao.isSupported()) {
+	else if (indexeddao.isSupported()) {
 		qr.dao = indexeddao;
 		qr.dao.open(function() {
-			return callback();
+			quizmanager.init(qr.dao, function() {
+				callback();
+			});
 		});
 	} else {
 		alert("Your browser does not support saving data, you can test the app but will not be able to save your progress");
 		qr.dao = memorydao;
-		return callback();
+		callback();
 	}
 }
 
@@ -94,7 +96,7 @@ function checkLanguage(callback) {
 				$.mobile.changePage("#language_add");
 			} else {
 				qr.language = data[0].code;
-				return callback();
+				callback();
 			}
 		});
 	});
@@ -508,15 +510,6 @@ $(document).delegate("#quiz", "pageinit", function() {
 		return $("label[for='" + input + "']");
 	}
 
-	function nextLabel() {
-		for (var i = 1; i <= 3; i++) {
-			var label = labelFor("answer" + i);
-			if (label.text().length == 0) {
-				return label;
-			}
-		}
-	}
-
 	function showQuiz(entry) {
 		// clear quiz form
 		$("label").text("");
@@ -527,11 +520,12 @@ $(document).delegate("#quiz", "pageinit", function() {
 		$("#quiz_def").text(entry.definitions[0].text);
 		$("#nextQuizButton").button('disable');
 		// add new quiz
-		var roll = Math.floor(Math.random() * 3) + 1;
-		correctOption = "answer" + roll;
-		labelFor(correctOption).text(entry.word);
-		nextLabel().text("wrong ans1");
-		nextLabel().text("wrong ans2");
+		quizmanager.getQuiz(qr.quizzes, entry, function(quiz) {
+			correctOption = "answer" + quiz.correct;
+			labelFor("answer1").text(quiz.answer[0]);
+			labelFor("answer2").text(quiz.answer[1]);
+			labelFor("answer3").text(quiz.answer[2]);
+		});
 	}
 
 	function nextQuiz() {
