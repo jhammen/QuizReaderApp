@@ -96,7 +96,10 @@ function checkLanguage(callback) {
 				$.mobile.changePage("#language_add");
 			} else {
 				qr.language = data[0].code;
-				callback();
+				qr.dao.getWordCount(function(count) {
+					$(".wordcount").text(count);
+					callback();					
+				});
 			}
 		});
 	});
