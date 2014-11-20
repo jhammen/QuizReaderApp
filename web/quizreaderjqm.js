@@ -69,8 +69,7 @@ Handlebars.registerHelper("libpath", function() {
 function checkDb(callback) {
 	if (qr.dao) {
 		callback();
-	}
-	else if (indexeddao.isSupported()) {
+	} else if (indexeddao.isSupported()) {
 		qr.dao = indexeddao;
 		qr.dao.open(function() {
 			quizmanager.init(qr.dao, function() {
@@ -98,7 +97,7 @@ function checkLanguage(callback) {
 				qr.language = data[0].code;
 				qr.dao.getWordCount(function(count) {
 					$(".wordcount").text(count);
-					callback();					
+					callback();
 				});
 			}
 		});
@@ -241,9 +240,9 @@ function quizRead() {
 		qr.defWords = qr.defWords.concat(chunk.words);
 	}
 	if (qr.defWords.length) {
-		$.mobile.changePage("#show_def");
+		$("#show_def").popup("open");
 	} else if (qr.quizzes.length) {
-		$.mobile.changePage("#quiz");
+		$("#quiz").popup("open");
 	}
 }
 
@@ -420,7 +419,7 @@ $(document).delegate("#details", "pageinit", function() {
 			qr.dao.addTitle(qr.title);
 		}
 		// read
-		loadSection();
+		$.mobile.changePage("#read");
 	});
 
 	$(document).on('pagebeforeshow', '#details', function(e, data) {
@@ -440,14 +439,14 @@ $(document).delegate("#read", "pageinit", function() {
 
 	$(document).on('pagebeforeshow', '#read', function(e, data) {
 		checkTitle(function() {
-			//
+			loadSection();
 		});
 	});
 });
 
-// ------------------- definition page
+// ------------------- definition popup
 
-$(document).delegate("#show_def", "pageinit", function() {
+$(document).delegate("#show_def", "popupcreate", function() {
 
 	var source = $("#def_template").html();
 	var template = Handlebars.compile(source);
@@ -483,7 +482,7 @@ $(document).delegate("#show_def", "pageinit", function() {
 			});
 		} else { // we're out of definitions to show
 			if (qr.quizzes.length) {
-				$.mobile.changePage("#quiz");
+				$("#quiz").popup("open");
 			} else { // we're done showing quizzes
 				$.mobile.changePage("#read");
 			}
@@ -496,16 +495,16 @@ $(document).delegate("#show_def", "pageinit", function() {
 
 	});
 
-	$(document).on('pagebeforeshow', '#show_def', function(e, data) {
+	$(document).on('popupbeforeposition', '#show_def', function(e, data) {
 		checkTitle(function() {
 			nextDefinition();
 		});
 	});
 });
 
-// ------------------- quiz page
+// ------------------- quiz popup
 
-$(document).delegate("#quiz", "pageinit", function() {
+$(document).delegate("#quiz", "popupcreate", function() {
 
 	var correctOption;
 
@@ -561,7 +560,7 @@ $(document).delegate("#quiz", "pageinit", function() {
 				}
 			});
 		} else { // out of quizzes, close dialog
-			$.mobile.changePage("#read");
+			$("#quiz").popup("close");
 		}
 	}
 
@@ -605,7 +604,7 @@ $(document).delegate("#quiz", "pageinit", function() {
 		nextQuiz();
 	});
 
-	$(document).on('pagebeforeshow', '#quiz', function(e, data) {
+	$(document).on('popupbeforeposition', '#quiz', function(e, data) {
 		checkTitle(function() {
 			nextQuiz();
 		});

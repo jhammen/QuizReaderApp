@@ -130,10 +130,9 @@
 				<div id="popup_def2"></div>
 			</div>
 		</div>
-	</div>
 
-	<div data-role="page" id="show_def" data-dialog="true">
-		<script id="def_template" type="text/x-handlebars-template">
+		<div data-role="popup" id="show_def" data-dialog="true">
+			<script id="def_template" type="text/x-handlebars-template">
 		<b>{{word}}</b>
 		<ul>
 			{{#each definitions}}
@@ -142,16 +141,12 @@
 			[No definition available]
 			{{/each}}
 		</ul>
-		</script>
-
-		<div data-role="content" class="full">
+			</script>
 			<div id="def_div"></div>
 			<button id="nextDefButton">OK</button>
 		</div>
-	</div>
 
-	<div data-role="page" id="quiz" data-dialog="true">
-		<div data-role="content" class="full">
+		<div data-role="popup" id="quiz" data-dismissible="false" class="ui-content">
 			<form>
 				<fieldset id="quiz_set" data-role="controlgroup">
 					<legend>
