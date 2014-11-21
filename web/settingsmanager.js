@@ -28,8 +28,8 @@ var settingsmanager = (function() {
 		});
 	}
 
-	function getSetting(key) {
-		return settings[key];
+	function getSetting(key, value) {
+		return settings[key] ? settings[key] : value;
 	}
 
 	function saveSettings(data, callback) {

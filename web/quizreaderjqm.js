@@ -217,7 +217,7 @@ function loadSection() {
 					if (!count) {
 						chunk.words.push(word);
 					}
-					if (count < 2) {
+					if (!count || count < 2) {
 						chunk.quizzes.push(word);
 					}
 					if (!--remaining && !--elementsRemaining) {
@@ -483,10 +483,9 @@ $(document).delegate("#show_def", "popupcreate", function() {
 				}
 			});
 		} else { // we're out of definitions to show
+			$("#show_def").popup("close");
 			if (qr.quizzes.length) {
 				$("#quiz").popup("open");
-			} else { // we're done showing quizzes
-				$.mobile.changePage("#read");
 			}
 		}
 	}
@@ -494,7 +493,6 @@ $(document).delegate("#show_def", "popupcreate", function() {
 	// "Next" button
 	$("#nextDefButton").on('click', function(e) {
 		nextDefinition();
-
 	});
 
 	$(document).on('popupbeforeposition', '#show_def', function(e, data) {
@@ -584,7 +582,7 @@ $(document).delegate("#quiz", "popupcreate", function() {
 			// update word level
 			qr.dao.updateWord(labelFor(this.id).text(), 2, function() {
 				// auto-increment to next quiz
-				var countdown = settingsmanager.getSetting("flip_delay");
+				var countdown = settingsmanager.getSetting("flip_delay", 3);
 				(function timer() {
 					// show countdown in button
 					$("#nextQuizButton").val("Next (" + countdown + ")");
@@ -627,7 +625,7 @@ $(document).delegate("#settings", "pageinit", function() {
 
 	$(document).on('pagebeforeshow', '#settings', function(e, data) {
 		checkDb(function() {
-			$("#setting_flip_delay").val(settingsmanager.getSetting("flip_delay"));
+			$("#setting_flip_delay").val(settingsmanager.getSetting("flip_delay", 3));
 			$("#setting_flip_delay").slider("refresh");
 		});
 	});
