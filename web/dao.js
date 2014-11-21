@@ -12,21 +12,28 @@ var indexeddao = {
 
 	open : function(callback) {
 		var self = this;
-		var request = window.indexedDB.open("TestFFDatabase");
+		var request = window.indexedDB.open("TestFFDatabase", 2);
 		request.onerror = function(event) {
 			alert("cannot open IndexedDB");
 			console.log(event);
 		};
 		request.onupgradeneeded = function(event) {
 			var db = request.result;
-			var titleStore = db.createObjectStore("titles", {
-				keyPath : "path"
-			});
-			var activeIndex = titleStore.createIndex("is_active", "active");
-			var languageStore = db.createObjectStore("languages", {
-				keyPath : "code"
-			});
-			var wordStore = db.createObjectStore("words");
+			if(event.oldVersion < 1) {
+				// languages
+				var languageStore = db.createObjectStore("languages", {
+					keyPath : "code"
+				});
+				// titles
+				var titleStore = db.createObjectStore("titles", {
+					keyPath : "path"
+				});
+				var activeIndex = titleStore.createIndex("is_active", "active");
+				// words
+				var wordStore = db.createObjectStore("words");
+			}
+			// settings
+			var settingStore = db.createObjectStore("settings");
 		};
 		request.onsuccess = function(event) {
 			self.db = request.result;
@@ -179,7 +186,31 @@ var indexeddao = {
 		request.onsuccess = function(event) {				
 			return callback();
 		};
-	}
+	},
+	
+	saveSetting : function(setting, value, callback) {
+		var transaction = this.db.transaction("settings", "readwrite");
+		var settingStore = transaction.objectStore("settings");
+		var request = settingStore.put(value, setting);
+		request.onsuccess = function(event) {				
+			callback();
+		};
+	},
+	
+	getAllSettings : function(callback) {
+		var transaction = this.db.transaction("settings", "readonly");
+		var settingsStore = transaction.objectStore("settings");
+		var settings = {};
+		settingsStore.openCursor().onsuccess = function(event) {
+			var cursor = event.target.result;
+			if (cursor) {
+				settings[cursor.key] = cursor.value;
+				cursor.continue();
+			} else {
+				callback(settings);
+			}
+		};
+	},		
 };
 
 var memorydao = {

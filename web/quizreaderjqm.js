@@ -73,7 +73,9 @@ function checkDb(callback) {
 		qr.dao = indexeddao;
 		qr.dao.open(function() {
 			quizmanager.init(qr.dao, function() {
-				callback();
+				settingsmanager.init(qr.dao, function() {
+					callback();
+				});
 			});
 		});
 	} else {
@@ -582,7 +584,7 @@ $(document).delegate("#quiz", "popupcreate", function() {
 			// update word level
 			qr.dao.updateWord(labelFor(this.id).text(), 2, function() {
 				// auto-increment to next quiz
-				var countdown = 3;
+				var countdown = settingsmanager.getSetting("flip_delay");
 				(function timer() {
 					// show countdown in button
 					$("#nextQuizButton").val("Next (" + countdown + ")");
@@ -607,6 +609,26 @@ $(document).delegate("#quiz", "popupcreate", function() {
 	$(document).on('popupbeforeposition', '#quiz', function(e, data) {
 		checkTitle(function() {
 			nextQuiz();
+		});
+	});
+});
+
+// ------------------- settings page
+
+$(document).delegate("#settings", "pageinit", function() {
+
+	$("#setting_save_button").on('click', function(e) {
+		settingsmanager.saveSettings({
+			"flip_delay" : $("#setting_flip_delay").val()
+		}, function() {
+			alert("settings saved!");
+		});
+	});
+
+	$(document).on('pagebeforeshow', '#settings', function(e, data) {
+		checkDb(function() {
+			$("#setting_flip_delay").val(settingsmanager.getSetting("flip_delay"));
+			$("#setting_flip_delay").slider("refresh");
 		});
 	});
 });
