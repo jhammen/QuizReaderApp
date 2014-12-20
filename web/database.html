@@ -1,0 +1,81 @@
+<html>
+<head>
+<script src="./jquery/jquery-2.1.1.js"></script>
+<script src="./dao.js"></script>
+<script src="./handlebars.js"></script>
+<script>
+	var language = "fr";
+	Handlebars.registerHelper("libpath", function() {
+		return "/quizreader" + language + "/";
+	});
+
+	$(document).ready(function() {
+		var dao = indexeddao;
+		dao.open(function() {
+			dao.getOpenTitles(function(data) {
+				var source = $("#title_template").html();
+				var template = Handlebars.compile(source);
+				$("#title_table").html(template(data));
+			});
+			dao.getAllSettings(function(data) {
+				var source = $("#settings_template").html();
+				var template = Handlebars.compile(source);
+				$("#settings_table").html(template(data));
+			});
+			dao.getAllWords(function(data) {
+				data.sort();
+				var source = $("#word_template").html();
+				var template = Handlebars.compile(source);
+				$("#word_table").html(template(data));
+			});			
+		});
+	});
+</script>
+</head>
+<body>
+	<h2>Open Titles</h2>
+	<script id="title_template" type="text/x-handlebars-template">
+			<tr>
+				<th></th>
+				<th>Title</th>
+				<th>Author</th>
+				<th>Section</th>
+				<th>Element</th>
+			</tr>
+			{{#.}}
+			<tr>
+				<td><img width="32" height="32" src="{{libpath}}{{path}}/cover.png"></td>
+				<td>{{title}}</td>
+				<td>{{author}}</td>
+				<td>{{section}}</td>
+				<td>{{paragraph}}</td>
+			</tr>
+			{{else}}
+ 				<td>No Open Titles</td>		
+			{{/.}}
+		</script>
+	<table id="title_table"></table>
+	
+	<h2>Settings</h2>
+	<script id="settings_template" type="text/x-handlebars-template">
+			{{#each .}}
+			{{@key}}: {{this}}
+			{{/each}}
+		</script>
+	<div id="settings_table"></div>
+		
+	<h2>Words</h2>
+	<script id="word_template" type="text/x-handlebars-template">
+			{{#.}}
+			<tr>
+				<td>{{word}}</td>
+				<td>{{level}}</td>
+			</tr>
+			{{else}}
+ 				<td>No Words</td>		
+			{{/.}}
+		</script>
+	<table id="word_table"></table>
+	
+</body>
+</html>
