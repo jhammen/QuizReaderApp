@@ -81,8 +81,8 @@ var indexeddao = {
 		transaction.onerror = function(event) {
 			// TODO: handle errors
 		};
-		title.section = 1;
-		title.paragraph = 1;
+		title.section = 1; // section is 1-based
+		title.paragraph = 0; // element is 0-based
 		title.active = true;
 		var request = objectStore.add(title);
 		request.onsuccess = function(event) {

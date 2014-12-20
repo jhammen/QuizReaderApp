@@ -35,7 +35,7 @@ var quizmanager = (function() {
 
 	function getWrongAnswer(quizzes, entry, callback) {
 		// maybe use another word from same set
-		if (Math.random() > 0.7) {
+		if (!wordCount || Math.random() > 0.7) {
 			var pick = Math.floor(Math.random() * quizzes.length);
 			callback(quizzes[pick]);
 		} else {

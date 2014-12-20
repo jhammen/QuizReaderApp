@@ -24,17 +24,9 @@ var qr = {
 	current : {},
 	// currently selected title
 	title : null,
-	// section within document
-	section : 1,
-	// page elements
-	chunks : [],
-	// words to show definitions
-	defWords : [],
-	// definitions to show quizzes
-	quizzes : [],
 
 	getBaseUrl : function() {
-		return "/lib" + this.language + "/";
+		return "/quizreader" + this.language + "/";
 	},
 
 	getCoverUrl : function() {
@@ -50,8 +42,8 @@ var qr = {
 		return this.getBaseUrl() + "idx.json";
 	},
 
-	getPageUrl : function() {
-		var name = '' + this.section;
+	getPageUrl : function(section) {
+		var name = '' + section;
 		while (name.length < 3) {
 			name = "0" + name;
 		}
@@ -134,118 +126,6 @@ function getJSON(url, callback) {
 
 function getRoot(data) {
 	return data.definitions[0] ? data.definitions[0].root : null;
-}
-
-function popupDef(jqelem, data, root) {
-	var source = $("#popup_def_template").html();
-	var template = Handlebars.compile(source);
-
-	if (root) {
-		$("#popup_word1").text(root.word);
-		$("#popup_def1").html(template(root));
-		$("#popup_word2").text(data.word);
-		$("#popup_def2").html(template(data));
-	} else {
-		$("#popup_word1").text(data.word);
-		$("#popup_def1").html(template(data));
-		$("#popup_word2").text("");
-		$("#popup_def2").html("");
-	}
-
-	var pos = jqelem.position();
-	$("#popup_def").popup("open", {
-		x : pos.left + jqelem.width() / 2,
-		y : pos.top + jqelem.height()
-	});
-}
-
-function showDefinition(jqelem, word) {
-	qr.dao.updateWord(word, 1, function() {
-		getJSON(qr.getDefinitionUrl(word), function(data) {
-			var root = getRoot(data);
-			if (root) {
-				getJSON(qr.getDefinitionUrl(root), function(rdata) {
-					popupDef(jqelem, data, rdata);
-				});
-			} else {
-				popupDef(jqelem, data, null);
-			}
-		});
-	});
-}
-
-function loadSection() {
-
-	var sectionWord = {};
-	// load document and process elements
-	$("#text").load(qr.getPageUrl(), function() {
-		// parent elements of <a> definition tags
-		var elements = $("h1,h2,h3,h4,span,li", $("#text"));
-		var elementsRemaining = elements.length;
-
-		var index = 0;
-		elements.each(function(index) {
-			// start new chunk object
-			var chunk = qr.chunks[index++] = {
-				words : [],
-				quizzes : [],
-				element : this
-			};
-			// collect unique words
-			var elementWord = {};
-			$("a", this).each(function() {
-				var word = $(this).data("word");
-				if (!word) {
-					word = $(this).text();
-				}
-				if (!sectionWord[word]) {
-					sectionWord[word] = elementWord[word] = true;
-				}
-				// add link
-				$(this).click(function(evt) {
-					showDefinition($(this), word);
-					evt.preventDefault();
-				});
-			});
-			// lookup collected words
-			var remaining = Object.keys(elementWord).length;
-			if (!remaining && !--elementsRemaining) {
-				quizRead();
-			}
-			for (lookupWord in elementWord) {
-				qr.dao.getWord(lookupWord, function(word, count) {
-					if (!count) {
-						chunk.words.push(word);
-					}
-					if (!count || count < 2) {
-						chunk.quizzes.push(word);
-					}
-					if (!--remaining && !--elementsRemaining) {
-						quizRead();
-					}
-				});
-			}
-		});
-	});
-}
-
-function quizRead() {
-	if (!qr.chunks.length) {
-		qr.section++;
-		return loadSection();
-	}
-	while (qr.chunks.length && qr.quizzes.length < 3) {
-		var chunk = qr.chunks.shift();
-		// TODO: break if element has different parent
-		$(chunk.element).show();
-		qr.quizzes = qr.quizzes.concat(chunk.quizzes);
-		qr.defWords = qr.defWords.concat(chunk.words);
-	}
-	if (qr.defWords.length) {
-		$("#show_def").popup("open");
-	} else if (qr.quizzes.length) {
-		$("#quiz").popup("open");
-	}
 }
 
 // ---------------------- language add
@@ -435,13 +315,221 @@ $(document).delegate("#details", "pageinit", function() {
 
 $(document).delegate("#read", "pageinit", function() {
 
+	var page = { // page elements
+		chunks : [],
+		// words to show definitions
+		defWords : [],
+		// definitions to show quizzes
+		quizzes : [],
+		// elements for which we are quizzing
+		quizElements : []
+	};
+
+	function popupDef(jqelem, data, root) {
+		var source = $("#popup_def_template").html();
+		var template = Handlebars.compile(source);
+
+		if (root) {
+			$("#popup_word1").text(root.word);
+			$("#popup_def1").html(template(root));
+			$("#popup_word2").text(data.word);
+			$("#popup_def2").html(template(data));
+		} else {
+			$("#popup_word1").text(data.word);
+			$("#popup_def1").html(template(data));
+			$("#popup_word2").text("");
+			$("#popup_def2").html("");
+		}
+
+		var pos = jqelem.position();
+		$("#popup_def").popup("open", {
+			x : pos.left + jqelem.width() / 2,
+			y : pos.top + jqelem.height()
+		});
+	}
+
+	function showDefinition(jqelem, word) {
+		qr.dao.updateWord(word, 1, function() {
+			getJSON(qr.getDefinitionUrl(word), function(data) {
+				var root = getRoot(data);
+				if (root) {
+					getJSON(qr.getDefinitionUrl(root), function(rdata) {
+						popupDef(jqelem, data, rdata);
+					});
+				} else {
+					popupDef(jqelem, data, null);
+				}
+			});
+		});
+	}
+
+	function makeNextQuiz() {
+		while (page.chunks.length && page.quizzes.length < 3) {
+			var chunk = page.chunks.shift();
+			// TODO: break if element has different parent
+			page.quizzes = page.quizzes.concat(chunk.quizzes);
+			page.defWords = page.defWords.concat(chunk.words);
+			page.quizElements.push(chunk.element);
+		}
+		console.log("next set of defwords: " + page.defWords)
+	}
+
+	function showDef(callback) {
+		var word = page.defWords.shift();
+		$("#defArea").html("def for: " + word);
+		callback();
+	}
+
+	function showQuiz(callback) {
+		var word = page.quizzes.pop();
+		$("#defArea").html("quiz for: " + word);
+		callback();
+	}
+
+	function expandQuizArea(callback) {
+		$("#defArea").animate({
+			height : 200
+		}, 1000, callback);
+	}
+
+	function collapseQuizArea(callback) {
+		$("#defArea").html(""); // clear()?
+		$("#defArea").animate({
+			height : 1
+		}, 1000, callback);
+	}
+
+	function showElements(callback) {
+		while (page.quizElements.length) {
+			var elem = page.quizElements.shift();
+			$(elem).fadeTo(0, 0); // ?
+			$(elem).show();
+			$(elem).fadeTo(1000, 1.0);
+		}
+		callback();
+	}
+
+	function next(callback) {
+		// showing definitions
+		if (page.defWords.length) {
+			showDef(callback);
+		}
+		// showing quizzes
+		else if (page.quizzes.length) {
+			showQuiz(callback);
+		}
+		// done showing defs/quizzes
+		else if ($("#defArea").height() > 1) {
+			// TODO: save progress to db
+			// TODO: update word count
+			collapseQuizArea(function() {
+				showElements(callback);
+			});
+		}
+		// need a new quiz
+		else if (page.chunks.length) {
+			makeNextQuiz();
+			if (page.defWords.length) {
+				expandQuizArea();
+				showDef(callback);
+			} else if (page.quizzes.length) {
+				expandQuizArea();
+				showQuiz(callback);
+			} else {
+				showElements(callback);
+			}
+		}
+		// at end of section
+		else {
+			// TODO increment section and save to database
+			// loadSection(qr.title.section, 0, function() {
+			// next();
+			alert("end of section!");
+		}
+	}
+
+	function getWord(elem) {
+		return elem.data("word") ? elem.data("word") : elem.text();
+	}
+
+	function loadSection(section, elemIndex, callback) {
+
+		// load document and process elements
+		$("#text").load(qr.getPageUrl(section), function() {
+			alert("page url is: " + qr.getPageUrl(section));
+			// parent elements of <a> definition tags
+			var elements = $("h1,h2,h3,h4,span,li", $("#text"));
+
+			var appearsInSection = {};
+			var elementsRemaining = elements.length;
+			elements.each(function(index) {
+				if (index >= elemIndex) {
+					// new chunk object for this element
+					var chunk = {
+						words : [],
+						quizzes : [],
+						element : this
+					};
+					page.chunks.push(chunk);
+					// collect unique words
+					var elementWord = {};
+					$("a", this).each(function() {
+						var word = getWord($(this));
+						// add link
+						$(this).click(function(evt) {
+							showDefinition($(this), word);
+							evt.preventDefault();
+						});
+						// is this word unique in this section
+						if (!appearsInSection[word]) {
+							appearsInSection[word] = elementWord[word] = true;
+						}
+					});
+					// console.log("element words for element " + index + ": ")
+					// console.log(elementWord)
+					// lookup collected words
+					var remaining = Object.keys(elementWord).length;
+					if (!remaining && !--elementsRemaining) {
+						callback();
+					}
+					for (lookupWord in elementWord) {
+						qr.dao.getWord(lookupWord, function(word, count) {
+							if (!count) {
+								chunk.words.push(word);
+							}
+							if (!count || count < 2) {
+								chunk.quizzes.push(word);
+							}
+							if (!--remaining && !--elementsRemaining) {
+								callback();
+							}
+						});
+					}
+				} else {
+					$(this).show(); // show elements already passed
+				}
+			});
+		});
+	}
+
 	$("#moreButton").on('click', function(e) {
-		quizRead();
+		$("#moreButton").button('disable');
+		next(function() {
+			$("#moreButton").button('enable');
+		});
 	});
 
 	$(document).on('pagebeforeshow', '#read', function(e, data) {
 		checkTitle(function() {
-			loadSection();
+			loadSection(qr.title.section, qr.title.paragraph, function() {
+				if (!qr.title.paragraph) {
+					alert("zero paragraph!")
+					$("#moreButton").button('disable');
+					next(function() {
+						$("#moreButton").button('enable');
+					});
+				}
+			});
 		});
 	});
 });
@@ -463,14 +551,14 @@ $(document).delegate("#show_def", "popupcreate", function() {
 	function nextDefinition() {
 		if (qr.defWords.length) {
 			var word = qr.defWords.shift();
-			getJSON(qr.getDefinitionUrl(word), function(data) {
+			$.getJSON(qr.getDefinitionUrl(word)).done(function(data) {
 				// check for root
 				var root = getRoot(data);
 				if (root) {
 					// lookup root to see if known
 					qr.dao.getWord(root, function(root, count) {
 						if (!count) { // show root def if unknown
-							getJSON(qr.getDefinitionUrl(root), function(data) {
+							$.getJSON(qr.getDefinitionUrl(root)).done(function(data) {
 								qr.defWords.unshift(word);
 								showDefinition(data);
 							});
