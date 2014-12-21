@@ -19,7 +19,7 @@ var indexeddao = {
 		};
 		request.onupgradeneeded = function(event) {
 			var db = request.result;
-			if(event.oldVersion < 1) {
+			if (event.oldVersion < 1) {
 				// languages
 				var languageStore = db.createObjectStore("languages", {
 					keyPath : "code"
@@ -61,7 +61,7 @@ var indexeddao = {
 			var cursor = event.target.result;
 			if (cursor) {
 				languages.push(cursor.value);
-				cursor.continue();
+				cursor["continue"]();
 			} else {
 				console.log("found languages: " + languages.length);
 				console.log(languages);
@@ -104,7 +104,7 @@ var indexeddao = {
 			var cursor = event.target.result;
 			if (cursor) {
 				titles.push(cursor.value);
-				cursor.continue();
+				cursor["continue"]();
 			} else {
 				console.log("found titles: " + titles.length);
 				console.log(titles);
@@ -112,12 +112,12 @@ var indexeddao = {
 			}
 		};
 	},
-	
+
 	addWord : function(word, callback) {
 		var transaction = this.db.transaction("words", "readwrite");
 		var wordStore = transaction.objectStore("words");
 		var request = wordStore.add(0, word);
-		request.onsuccess = function(event) {				
+		request.onsuccess = function(event) {
 			return callback();
 		};
 	},
@@ -128,16 +128,15 @@ var indexeddao = {
 		var count = 0;
 		wordStore.openCursor().onsuccess = function(event) {
 			var result = event.target.result;
-			if(result) {				
+			if (result) {
 				++count;
-				result.continue();
-			}
-			else { 
+				result["continue"]();
+			} else {
 				callback(count);
 			}
 		};
 	},
-	
+
 	getWord : function(word, callback) {
 		var transaction = this.db.transaction("words", "readonly");
 		var wordStore = transaction.objectStore("words");
@@ -146,24 +145,23 @@ var indexeddao = {
 			callback(word, request.result);
 		};
 	},
-	
+
 	getWordAtIndex : function(index, callback) {
 		var transaction = this.db.transaction("words", "readonly");
 		var wordStore = transaction.objectStore("words");
 		var count = 0;
 		wordStore.openCursor().onsuccess = function(event) {
 			var result = event.target.result;
-			if(count++ == index) {
+			if (count++ == index) {
 				callback(result.key);
 			} else if (!result) {
 				callback(null);
-			}
-			else {
-				result.continue();				
+			} else {
+				result["continue"]();
 			}
 		};
 	},
-	
+
 	getAllWords : function(callback) {
 		var transaction = this.db.transaction("words", "readonly");
 		var wordStore = transaction.objectStore("words");
@@ -171,32 +169,35 @@ var indexeddao = {
 		wordStore.openCursor().onsuccess = function(event) {
 			var cursor = event.target.result;
 			if (cursor) {
-				words.push({"word" : cursor.key, "level" : cursor.value});
-				cursor.continue();
+				words.push({
+					"word" : cursor.key,
+					"level" : cursor.value
+				});
+				cursor["continue"]();
 			} else {
 				callback(words);
 			}
 		};
-	},	
-	
+	},
+
 	updateWord : function(word, value, callback) {
 		var transaction = this.db.transaction("words", "readwrite");
 		var wordStore = transaction.objectStore("words");
 		var request = wordStore.put(value, word);
-		request.onsuccess = function(event) {				
+		request.onsuccess = function(event) {
 			return callback();
 		};
 	},
-	
+
 	saveSetting : function(setting, value, callback) {
 		var transaction = this.db.transaction("settings", "readwrite");
 		var settingStore = transaction.objectStore("settings");
 		var request = settingStore.put(value, setting);
-		request.onsuccess = function(event) {				
+		request.onsuccess = function(event) {
 			callback();
 		};
 	},
-	
+
 	getAllSettings : function(callback) {
 		var transaction = this.db.transaction("settings", "readonly");
 		var settingsStore = transaction.objectStore("settings");
@@ -205,49 +206,49 @@ var indexeddao = {
 			var cursor = event.target.result;
 			if (cursor) {
 				settings[cursor.key] = cursor.value;
-				cursor.continue();
+				cursor["continue"]();
 			} else {
 				callback(settings);
 			}
 		};
-	},		
+	},
 };
 
 var memorydao = {
-		languages : [],
-		
-		titles : [],
-		
-		level : {},
-		
-		addLanguage : function(language, callback) {
-			this.languages.push(language);
-			callback();
-		},
+	languages : [],
 
-		getLanguages : function(callback) {
-			callback(this.languages);
-		},
-		
-		addTitle : function(title) {
-			this.titles.push(title);
-		},		
-		
-		getOpenTitles : function(callback) {			
-			callback(this.titles);
-		},
-		
-		addWord : function(word, callback) {
-			this.level[word] = 0;
-			return callback();
-		},
+	titles : [],
 
-		getWord : function(word, callback) {
-			callback(word, this.level[word]);
-		},
-		
-		updateWord : function(word, value, callback) {
-			this.level[word] = value;
-			return callback();
-		}
+	level : {},
+
+	addLanguage : function(language, callback) {
+		this.languages.push(language);
+		callback();
+	},
+
+	getLanguages : function(callback) {
+		callback(this.languages);
+	},
+
+	addTitle : function(title) {
+		this.titles.push(title);
+	},
+
+	getOpenTitles : function(callback) {
+		callback(this.titles);
+	},
+
+	addWord : function(word, callback) {
+		this.level[word] = 0;
+		return callback();
+	},
+
+	getWord : function(word, callback) {
+		callback(word, this.level[word]);
+	},
+
+	updateWord : function(word, value, callback) {
+		this.level[word] = value;
+		return callback();
+	}
 };
