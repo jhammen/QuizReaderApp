@@ -91,7 +91,25 @@ var indexeddao = {
 		request.onerror = function(event) {
 			alert("request error");
 		};
-		// this.titles.push(name);
+	},
+
+	updateTitle : function(title, callback) {
+		console.log("updating title: " + title.title)
+		var transaction = this.db.transaction("titles", "readwrite");
+		var objectStore = transaction.objectStore("titles");
+		// Do something when all the data is added to the database.
+		transaction.oncomplete = function(event) {
+		};
+		transaction.onerror = function(event) {
+			// TODO: handle errors
+		};
+		var request = objectStore.put(title);
+		request.onsuccess = function(event) {
+			callback();
+		};
+		request.onerror = function(event) {
+			// TODO: handle errors
+		};
 	},
 
 	getOpenTitles : function(callback) {

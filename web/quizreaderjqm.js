@@ -322,7 +322,7 @@ $(document).delegate("#read", "pageinit", function() {
 		// definitions to show quizzes
 		quizzes : [],
 		// elements for which we are quizzing
-		quizElements : []
+		quizChunks: []
 	};
 
 	function popupDef(jqelem, data, root) {
@@ -369,7 +369,7 @@ $(document).delegate("#read", "pageinit", function() {
 			// TODO: break if element has different parent
 			page.quizzes = page.quizzes.concat(chunk.quizzes);
 			page.defWords = page.defWords.concat(chunk.words);
-			page.quizElements.push(chunk.element);
+			page.quizChunks.push(chunk);
 		}
 		console.log("next set of defwords: " + page.defWords)
 	}
@@ -389,7 +389,11 @@ $(document).delegate("#read", "pageinit", function() {
 	function expandQuizArea(callback) {
 		$("#defArea").animate({
 			height : 200
-		}, 1000, callback);
+		}, 1000, function() {
+			$("html, body").animate({
+				scrollTop : $(document).height() - $(window).height()
+			}, 500, callback);
+		});
 	}
 
 	function collapseQuizArea(callback) {
@@ -400,13 +404,20 @@ $(document).delegate("#read", "pageinit", function() {
 	}
 
 	function showElements(callback) {
-		while (page.quizElements.length) {
-			var elem = page.quizElements.shift();
+		while (page.quizChunks.length) {
+			var chunk = page.quizChunks.shift();
+			var elem = chunk.element;
 			$(elem).fadeTo(0, 0); // ?
 			$(elem).show();
 			$(elem).fadeTo(1000, 1.0);
+			qr.title.element = chunk.index;
 		}
-		callback();
+		qr.dao.updateTitle(qr.title, function() {
+			console.log("updated title element to " + qr.title.element);
+		});
+		$("html, body").animate({
+			scrollTop : $(document).height() - $(window).height()
+		}, 500, callback);
 	}
 
 	function next(callback) {
@@ -420,7 +431,6 @@ $(document).delegate("#read", "pageinit", function() {
 		}
 		// done showing defs/quizzes
 		else if ($("#defArea").height() > 1) {
-			// TODO: save progress to db
 			// TODO: update word count
 			collapseQuizArea(function() {
 				showElements(callback);
@@ -456,19 +466,19 @@ $(document).delegate("#read", "pageinit", function() {
 
 		// load document and process elements
 		$("#text").load(qr.getPageUrl(section), function() {
-			alert("page url is: " + qr.getPageUrl(section));
 			// parent elements of <a> definition tags
 			var elements = $("h1,h2,h3,h4,span,li", $("#text"));
 
 			var appearsInSection = {};
 			var elementsRemaining = elements.length;
 			elements.each(function(index) {
-				if (index >= elemIndex) {
+				if (index > elemIndex) {
 					// new chunk object for this element
 					var chunk = {
 						words : [],
 						quizzes : [],
-						element : this
+						element : this,
+						index : index
 					};
 					page.chunks.push(chunk);
 					// collect unique words
@@ -521,9 +531,8 @@ $(document).delegate("#read", "pageinit", function() {
 
 	$(document).on('pagebeforeshow', '#read', function(e, data) {
 		checkTitle(function() {
-			loadSection(qr.title.section, qr.title.paragraph, function() {
-				if (!qr.title.paragraph) {
-					alert("zero paragraph!")
+			loadSection(qr.title.section, qr.title.element, function() {
+				if (!qr.title.element) {
 					$("#moreButton").button('disable');
 					next(function() {
 						$("#moreButton").button('enable');
