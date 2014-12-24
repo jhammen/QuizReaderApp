@@ -24,6 +24,8 @@ var qr = {
 	current : {},
 	// currently selected title
 	title : null,
+	// word count
+	wordcount : 0,
 
 	getBaseUrl : function() {
 		return "/quizreader" + this.language + "/";
@@ -91,6 +93,7 @@ function checkLanguage(callback) {
 				qr.language = data[0].code;
 				qr.dao.getWordCount(function(count) {
 					$(".wordcount").text(count);
+					qr.wordcount = count;
 					callback();
 				});
 			}
@@ -381,6 +384,7 @@ $(document).delegate("#read", "pageinit", function() {
 		// update in dao
 		qr.dao.updateWord(data.word, 1, function() {
 			$("#defArea").html(defTemplate(data));
+			qr.wordcount++;
 		});
 	}
 
@@ -460,7 +464,7 @@ $(document).delegate("#read", "pageinit", function() {
 		}
 		// done showing defs/quizzes
 		else if ($("#defArea").height() > 0) {
-			// TODO: update word count
+			$(".wordcount").text(qr.wordcount);
 			collapseQuizArea(function() {
 				showElements(callback);
 			});
