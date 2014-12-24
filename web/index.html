@@ -103,6 +103,17 @@
 	</div>
 
 	<div data-role="page" id="read">
+
+		<script id="def_template" type="text/x-handlebars-template">
+		<b>{{word}}</b>
+		<ul>
+			{{#each definitions}}
+			<li><i>{{type}}</i> {{text}}</li>
+			{{else}}
+			[No definition available]
+			{{/each}}
+		</ul>
+		</script>
 		<div data-role="header">
 			<a href="#settings" data-icon="gear" class="ui-btn-left">Settings</a>
 			<h1>QuizReader</h1>
@@ -135,21 +146,6 @@
 				<div id="popup_def1"></div>
 				<div id="popup_def2"></div>
 			</div>
-		</div>
-
-		<div data-role="popup" id="show_def" data-dialog="true">
-			<script id="def_template" type="text/x-handlebars-template">
-		<b>{{word}}</b>
-		<ul>
-			{{#each definitions}}
-			<li><i>{{type}}</i> {{text}}</li>
-			{{else}}
-			[No definition available]
-			{{/each}}
-		</ul>
-			</script>
-			<div id="def_div"></div>
-			<button id="nextDefButton">OK</button>
 		</div>
 
 		<div data-role="popup" id="quiz" data-dismissible="false"

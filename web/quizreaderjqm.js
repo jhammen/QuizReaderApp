@@ -322,7 +322,7 @@ $(document).delegate("#read", "pageinit", function() {
 		// definitions to show quizzes
 		quizzes : [],
 		// elements for which we are quizzing
-		quizChunks: []
+		quizChunks : []
 	};
 
 	function popupDef(jqelem, data, root) {
@@ -348,7 +348,7 @@ $(document).delegate("#read", "pageinit", function() {
 		});
 	}
 
-	function showDefinition(jqelem, word) {
+	function showPopupDefinition(jqelem, word) {
 		qr.dao.updateWord(word, 1, function() {
 			getJSON(qr.getDefinitionUrl(word), function(data) {
 				var root = getRoot(data);
@@ -373,11 +373,40 @@ $(document).delegate("#read", "pageinit", function() {
 		}
 		console.log("next set of defwords: " + page.defWords)
 	}
+	
+	var defSource = $("#def_template").html();
+	var defTemplate = Handlebars.compile(defSource);
+	
+	function showDefinition(data) {
+		// update in dao
+		qr.dao.updateWord(data.word, 1, function() {
+			$("#defArea").html(defTemplate(data));
+		});
+	}
 
-	function showDef(callback) {
+	function nextDefinition(callback) {
 		var word = page.defWords.shift();
-		$("#defArea").html("def for: " + word);
-		callback();
+		$.getJSON(qr.getDefinitionUrl(word)).done(function(data) {
+			// check for root
+			var root = getRoot(data);
+			if (root) {
+				// lookup root to see if known
+				qr.dao.getWord(root, function(root, count) {
+					if (!count) { // show root def if unknown
+						$.getJSON(qr.getDefinitionUrl(root)).done(function(data) {
+							page.defWords.unshift(word);
+							showDefinition(data);
+						});
+					} else {
+						showDefinition(data);
+					}
+				});
+			} else {
+				showDefinition(data);
+			}
+		}).always(function() {
+			callback();
+		});
 	}
 
 	function showQuiz(callback) {
@@ -399,7 +428,7 @@ $(document).delegate("#read", "pageinit", function() {
 	function collapseQuizArea(callback) {
 		$("#defArea").html(""); // clear()?
 		$("#defArea").animate({
-			height : 1
+			height : 0
 		}, 1000, callback);
 	}
 
@@ -423,14 +452,14 @@ $(document).delegate("#read", "pageinit", function() {
 	function next(callback) {
 		// showing definitions
 		if (page.defWords.length) {
-			showDef(callback);
+			nextDefinition(callback);
 		}
 		// showing quizzes
 		else if (page.quizzes.length) {
 			showQuiz(callback);
 		}
 		// done showing defs/quizzes
-		else if ($("#defArea").height() > 1) {
+		else if ($("#defArea").height() > 0) {
 			// TODO: update word count
 			collapseQuizArea(function() {
 				showElements(callback);
@@ -441,7 +470,7 @@ $(document).delegate("#read", "pageinit", function() {
 			makeNextQuiz();
 			if (page.defWords.length) {
 				expandQuizArea();
-				showDef(callback);
+				nextDefinition(callback);
 			} else if (page.quizzes.length) {
 				expandQuizArea();
 				showQuiz(callback);
@@ -487,7 +516,7 @@ $(document).delegate("#read", "pageinit", function() {
 						var word = getWord($(this));
 						// add link
 						$(this).click(function(evt) {
-							showDefinition($(this), word);
+							showPopupDefinition($(this), word);
 							evt.preventDefault();
 						});
 						// is this word unique in this section
@@ -539,62 +568,6 @@ $(document).delegate("#read", "pageinit", function() {
 					});
 				}
 			});
-		});
-	});
-});
-
-// ------------------- definition popup
-
-$(document).delegate("#show_def", "popupcreate", function() {
-
-	var source = $("#def_template").html();
-	var template = Handlebars.compile(source);
-
-	function showDefinition(data) {
-		// update in dao
-		qr.dao.updateWord(data.word, 1, function() {
-			$("#def_div").html(template(data));
-		});
-	}
-
-	function nextDefinition() {
-		if (qr.defWords.length) {
-			var word = qr.defWords.shift();
-			$.getJSON(qr.getDefinitionUrl(word)).done(function(data) {
-				// check for root
-				var root = getRoot(data);
-				if (root) {
-					// lookup root to see if known
-					qr.dao.getWord(root, function(root, count) {
-						if (!count) { // show root def if unknown
-							$.getJSON(qr.getDefinitionUrl(root)).done(function(data) {
-								qr.defWords.unshift(word);
-								showDefinition(data);
-							});
-						} else {
-							showDefinition(data);
-						}
-					});
-				} else {
-					showDefinition(data);
-				}
-			});
-		} else { // we're out of definitions to show
-			$("#show_def").popup("close");
-			if (qr.quizzes.length) {
-				$("#quiz").popup("open");
-			}
-		}
-	}
-
-	// "Next" button
-	$("#nextDefButton").on('click', function(e) {
-		nextDefinition();
-	});
-
-	$(document).on('popupbeforeposition', '#show_def', function(e, data) {
-		checkTitle(function() {
-			nextDefinition();
 		});
 	});
 });
