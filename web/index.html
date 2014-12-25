@@ -15,6 +15,7 @@
 </head>
 
 <body>
+	<!-- Currently Reading Page -->
 	<div data-role="page" id="current">
 
 		<div data-role="header">
@@ -45,6 +46,7 @@
 		</div>
 	</div>
 
+	<!-- Library Page -->
 	<div data-role="page" id="library">
 
 		<div data-role="header">
@@ -84,6 +86,7 @@
 		</div>
 	</div>
 
+	<!-- Details Page -->
 	<div data-role="page" id="details">
 
 		<div data-role="header">
@@ -102,6 +105,7 @@
 		</div>
 	</div>
 
+	<!-- Read Page -->
 	<div data-role="page" id="read">
 
 		<script id="def_template" type="text/x-handlebars-template">
@@ -114,6 +118,7 @@
 			{{/each}}
 		</ul>
 		</script>
+
 		<div data-role="header">
 			<a href="#settings" data-icon="gear" class="ui-btn-left">Settings</a>
 			<h1>QuizReader</h1>
@@ -122,8 +127,28 @@
 
 		<div data-role="content" class="full">
 			<div id="text"></div>
-			<div id="defArea"></div>
-			<input type="button" id="moreButton" value="More">
+			<div id="bubble_div">
+				<div id="def_div"></div>
+				<div id="quiz_div">
+					<form>
+						<fieldset id="quiz_set" data-role="controlgroup">
+							<legend>
+								<i id="quiz_def"></i>
+							</legend>
+							<!-- 1 -->
+							<input name="quiz" id="answer1" value="1" type="radio"><label
+								for="answer1"></label>
+							<!-- 2 -->
+							<input name="quiz" id="answer2" value="2" type="radio"><label
+								for="answer2"></label>
+							<!-- 3 -->
+							<input name="quiz" id="answer3" value="3" type="radio"><label
+								for="answer3"></label>
+						</fieldset>
+					</form>
+				</div>
+			</div>
+			<input type="button" id="more_button" value="More">
 		</div>
 
 		<script id="popup_def_template" type="text/x-handlebars-template">
@@ -146,23 +171,6 @@
 				<div id="popup_def1"></div>
 				<div id="popup_def2"></div>
 			</div>
-		</div>
-
-		<div data-role="popup" id="quiz" data-dismissible="false"
-			class="ui-content">
-			<form>
-				<fieldset id="quiz_set" data-role="controlgroup">
-					<legend>
-						<i id="quiz_def"></i>
-					</legend>
-					<input name="quiz" id="answer1" value="1" type="radio"><label
-						for="answer1"></label><input name="quiz" id="answer2" value="2"
-						type="radio"><label for="answer2"></label><input
-						name="quiz" id="answer3" value="3" type="radio"><label
-						for="answer3"></label>
-				</fieldset>
-			</form>
-			<input type="button" id="nextQuizButton" value="Next"></input>
 		</div>
 	</div>
 
