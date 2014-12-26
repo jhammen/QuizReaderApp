@@ -474,34 +474,32 @@ $(document).delegate("#read", "pageinit", function() {
 	function nextQuiz() {
 		// get next entry
 		var word = page.quizzes.pop();
-		getJSON(qr.getDefinitionUrl(word), function(entry) {
+		$.getJSON(qr.getDefinitionUrl(word)).done(function(entry) {
 			// check for root
 			var root = getRoot(entry);
 			if (root) {
 				// lookup root to see if known
 				qr.dao.getWord(root, function(root, count) {
 					if (count < 2) { // show root quiz
-						getJSON(qr.getDefinitionUrl(root), function(data) {
-							if (data.definitions[0]) {
-								page.quizzes.push(word);
-								showQuiz(data);
-							} else {
-								showQuiz(entry);
-							}
+						$.getJSON(qr.getDefinitionUrl(root)).done(function(data) {
+							page.quizzes.push(word);
+							showQuiz(data);
+						}).fail(function() {
+							next();
 						});
 					} else {
 						showQuiz(entry);
 					}
 				});
-			} else if (entry.definitions[0]) {
-				showQuiz(entry);
 			} else {
-				nextQuiz();
+				showQuiz(entry);
 			}
+		}).fail(function() {
+			next();
 		});
 	}
 
-	function expandQuizArea() {
+	function expandBubbleArea() {
 		$("#bubble_div").animate({
 			height : 200
 		}, 1000, function() {
@@ -511,7 +509,7 @@ $(document).delegate("#read", "pageinit", function() {
 		});
 	}
 
-	function collapseQuizArea(callback) {
+	function collapseBubbleArea(callback) {
 		$("#def_div").html(""); // clear()?
 		$("#bubble_div").animate({
 			height : 0
@@ -541,17 +539,19 @@ $(document).delegate("#read", "pageinit", function() {
 		$("#more_button").button('disable');
 		// showing definitions
 		if (page.defWords.length) {
+			$("#quiz_div").hide();
 			nextDefinition();
 		}
 		// showing quizzes
 		else if (page.quizzes.length) {
 			$("#def_div").hide();
+			$("#quiz_div").show();
 			nextQuiz();
 		}
 		// done showing defs/quizzes
 		else if ($("#bubble_div").height() > 0) {
 			$(".wordcount").text(qr.wordcount);
-			collapseQuizArea(function() {
+			collapseBubbleArea(function() {
 				showElements();
 			});
 		}
@@ -559,11 +559,12 @@ $(document).delegate("#read", "pageinit", function() {
 		else if (page.chunks.length) {
 			makeNextQuiz();
 			if (page.defWords.length) {
-				expandQuizArea();
+				expandBubbleArea();
 				$("#def_div").show();
 				nextDefinition();
 			} else if (page.quizzes.length) {
-				expandQuizArea();
+				expandBubbleArea();
+				$("#quiz_div").show();
 				nextQuiz();
 			} else {
 				showElements();
