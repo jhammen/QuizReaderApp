@@ -37,6 +37,7 @@
 	<script id="title_template" type="text/x-handlebars-template">
 			<tr>
 				<th></th>
+				<th>Path</th>
 				<th>Title</th>
 				<th>Author</th>
 				<th>Section</th>
@@ -45,6 +46,7 @@
 			{{#.}}
 			<tr>
 				<td><img width="32" height="32" src="{{libpath}}{{path}}/cover.png"></td>
+				<td>{{path}}</td>
 				<td>{{title}}</td>
 				<td>{{author}}</td>
 				<td>{{section}}</td>

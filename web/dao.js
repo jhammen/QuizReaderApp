@@ -70,26 +70,22 @@ var indexeddao = {
 		};
 	},
 
-	addTitle : function(title) {
-		console.log("adding title: " + title.title)
+	addTitle : function(title, callback) {
 		var transaction = this.db.transaction("titles", "readwrite");
 		var objectStore = transaction.objectStore("titles");
 		// Do something when all the data is added to the database.
 		transaction.oncomplete = function(event) {
-			console.log("addTitle success");
+			// console.log("addTitle success");
 		};
 		transaction.onerror = function(event) {
 			// TODO: handle errors
 		};
 		title.section = 1; // section is 1-based
-		title.paragraph = 0; // element is 0-based
+		title.element = 0; // element is 0-based
 		title.active = true;
 		var request = objectStore.add(title);
 		request.onsuccess = function(event) {
-			alert("request success");
-		};
-		request.onerror = function(event) {
-			alert("request error");
+			callback(title);
 		};
 	},
 
@@ -128,6 +124,15 @@ var indexeddao = {
 				console.log(titles);
 				callback(titles);
 			}
+		};
+	},
+
+	getTitle : function(path, callback) {
+		var transaction = this.db.transaction([ "titles" ]);
+		var objectStore = transaction.objectStore("titles");
+		objectStore.get(path).onsuccess = function(event) {
+			var result = event.target.result;
+			callback(result);
 		};
 	},
 
@@ -270,3 +275,14 @@ var memorydao = {
 		return callback();
 	}
 };
+
+function getDao(callback) {
+	if (indexeddao.isSupported()) {
+		indexeddao.open(function() {
+			callback(indexeddao);
+		});
+	} else {
+		alert("Your browser does not support saving data, you can test the app but will not be able to save your progress");
+		callback(memorydao);
+	}
+}
