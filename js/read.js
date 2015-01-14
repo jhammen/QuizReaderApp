@@ -49,7 +49,8 @@ var qr = {
 		while (name.length < 3) {
 			name = "0" + name;
 		}
-		return this.getBaseUrl() + this.title.path + "/t" + name + ".html";
+		var path = this.title.path.substring(2);
+		return this.getBaseUrl() + path + "/t" + name + ".html";
 	}
 };
 
@@ -93,7 +94,7 @@ $(document).delegate("#read", "pageinit", function() {
 	}
 
 	function showPopupDefinition(jqelem, word) {
-		qr.dao.updateWord(word, 1, function() {
+		qr.dao.saveWord(qr.language, word, 1, function() {
 			getJSON(qr.getDefinitionUrl(word), function(data) {
 				var root = getRoot(data);
 				if (root) {
@@ -123,7 +124,7 @@ $(document).delegate("#read", "pageinit", function() {
 
 	function showDefinition(data) {
 		// update in dao
-		qr.dao.updateWord(data.word, 1, function() {
+		qr.dao.saveWord(qr.language, data.word, 1, function() {
 			$("#def_div").html(defTemplate(data));
 			qr.wordcount++;
 		});
@@ -132,13 +133,15 @@ $(document).delegate("#read", "pageinit", function() {
 	function nextDefinition() {
 		var word = page.defWords.shift();
 		$.getJSON(qr.getDefinitionUrl(word)).done(function(data) {
+			data.word = word;
 			// check for root
 			var root = getRoot(data);
 			if (root) {
 				// lookup root to see if known
-				qr.dao.getWord(root, function(root, count) {
+				qr.dao.getWord(qr.language, root, function(root, count) {
 					if (!count) { // show root def if unknown
 						$.getJSON(qr.getDefinitionUrl(root)).done(function(data) {
+							data.word = root;
 							page.defWords.unshift(word);
 							showDefinition(data);
 						});
@@ -167,7 +170,7 @@ $(document).delegate("#read", "pageinit", function() {
 		$("input:radio").removeAttr('checked');
 		$("input:radio").checkboxradio('refresh');
 		$("input:radio").checkboxradio('enable');
-		$("#quiz_def").text(entry.definitions[0].text);
+		$("#quiz_def").text(entry.definitions.length ? entry.definitions[0].text : "*");
 		// add new quiz
 		quizmanager.getQuiz(page.quizzes, entry, function(quiz) {
 			correctOption = "answer" + quiz.correct;
@@ -193,7 +196,7 @@ $(document).delegate("#read", "pageinit", function() {
 			});
 		} else {
 			// update word level
-			qr.dao.updateWord(labelFor(this.id).text(), 2, function() {
+			qr.dao.saveWord(qr.language, labelFor(this.id).text(), 2, function() {
 				// auto-increment to next quiz
 				var countdown = settingsmanager.getSetting("flip_delay", 3);
 				(function timer() {
@@ -216,14 +219,16 @@ $(document).delegate("#read", "pageinit", function() {
 		// get next entry
 		var word = page.quizzes.pop();
 		$.getJSON(qr.getDefinitionUrl(word)).done(function(entry) {
+			entry.word = word;
 			// check for root
 			var root = getRoot(entry);
 			if (root) {
 				// lookup root to see if known
-				qr.dao.getWord(root, function(root, count) {
+				qr.dao.getWord(qr.language, root, function(root, count) {					
 					if (count < 2) { // show root quiz
 						$.getJSON(qr.getDefinitionUrl(root)).done(function(data) {
 							page.quizzes.push(word);
+							data.word = root;
 							showQuiz(data);
 						}).fail(function() {
 							next();
@@ -320,7 +325,7 @@ $(document).delegate("#read", "pageinit", function() {
 		}
 	}
 
-	function getWord(elem) {
+	function getWordFromElement(elem) {
 		return elem.data("word") ? elem.data("word") : elem.text();
 	}
 
@@ -346,7 +351,7 @@ $(document).delegate("#read", "pageinit", function() {
 					// collect unique words
 					var elementWord = {};
 					$("a", this).each(function() {
-						var word = getWord($(this));
+						var word = getWordFromElement($(this));
 						// add link
 						$(this).click(function(evt) {
 							showPopupDefinition($(this), word);
@@ -365,7 +370,7 @@ $(document).delegate("#read", "pageinit", function() {
 						callback();
 					}
 					for (lookupWord in elementWord) {
-						qr.dao.getWord(lookupWord, function(word, count) {
+						qr.dao.getWord(qr.language, lookupWord, function(word, count) {
 							if (!count) {
 								chunk.words.push(word);
 							}
@@ -389,17 +394,14 @@ $(document).delegate("#read", "pageinit", function() {
 	});
 
 	$(document).on('pagebeforeshow', '#read', function(e, data) {
-
 		var resource = window.location.search.substring(3);
 		qr.language = resource.substring(0, 2);
-
-		var path = resource.substring(3);
 
 		getDao(function(dao) {
 			qr.dao = dao;
 			quizmanager.init(dao, function() {
 				settingsmanager.init(dao, function() {
-					dao.getTitle(path, function(title) {
+					dao.getTitle(resource, function(title) {
 						if (title) {
 							qr.title = title;
 							loadSection(title.section, title.element, function() {
@@ -409,7 +411,7 @@ $(document).delegate("#read", "pageinit", function() {
 							});
 						} else {
 							qr.title = {
-								path : path
+								path : resource
 							};
 							dao.addTitle(qr.title, function(title) {
 								loadSection(1, 0, function() {

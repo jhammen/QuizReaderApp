@@ -28,12 +28,16 @@ var indexeddao = {
 				var titleStore = db.createObjectStore("titles", {
 					keyPath : "path"
 				});
-				var activeIndex = titleStore.createIndex("is_active", "active");
+				titleStore.createIndex("active", "active");
 				// words
-				var wordStore = db.createObjectStore("words");
+				var wordStore = db.createObjectStore("words", {
+					autoIncrement : true,
+					keyPath : "id"
+				});
+				wordStore.createIndex("word", "word");
+				// settings
+				var settingStore = db.createObjectStore("settings");
 			}
-			// settings
-			var settingStore = db.createObjectStore("settings");
 		};
 		request.onsuccess = function(event) {
 			self.db = request.result;
@@ -63,8 +67,6 @@ var indexeddao = {
 				languages.push(cursor.value);
 				cursor["continue"]();
 			} else {
-				console.log("found languages: " + languages.length);
-				console.log(languages);
 				callback(languages);
 			}
 		};
@@ -73,13 +75,6 @@ var indexeddao = {
 	addTitle : function(title, callback) {
 		var transaction = this.db.transaction("titles", "readwrite");
 		var objectStore = transaction.objectStore("titles");
-		// Do something when all the data is added to the database.
-		transaction.oncomplete = function(event) {
-			// console.log("addTitle success");
-		};
-		transaction.onerror = function(event) {
-			// TODO: handle errors
-		};
 		title.section = 1; // section is 1-based
 		title.element = 0; // element is 0-based
 		title.active = true;
@@ -90,7 +85,7 @@ var indexeddao = {
 	},
 
 	updateTitle : function(title, callback) {
-		console.log("updating title: " + title.title)
+		console.log("updating title: " + title.path)
 		var transaction = this.db.transaction("titles", "readwrite");
 		var objectStore = transaction.objectStore("titles");
 		// Do something when all the data is added to the database.
@@ -120,8 +115,6 @@ var indexeddao = {
 				titles.push(cursor.value);
 				cursor["continue"]();
 			} else {
-				console.log("found titles: " + titles.length);
-				console.log(titles);
 				callback(titles);
 			}
 		};
@@ -136,16 +129,28 @@ var indexeddao = {
 		};
 	},
 
-	addWord : function(word, callback) {
-		var transaction = this.db.transaction("words", "readwrite");
-		var wordStore = transaction.objectStore("words");
-		var request = wordStore.add(0, word);
-		request.onsuccess = function(event) {
-			return callback();
+	deleteTitle : function(path, callback) {
+		var transaction = this.db.transaction([ "titles" ], "readwrite");
+		var objectStore = transaction.objectStore("titles");
+		objectStore["delete"](path).onsuccess = function(event) {
+			callback();
 		};
 	},
 
-	getWordCount : function(callback) {
+	// addWord : function(language, word, callback) {
+	// var transaction = this.db.transaction("words", "readwrite");
+	// var wordStore = transaction.objectStore("words");
+	// var request = wordStore.add({
+	// "language" : language,
+	// "word" : word,
+	// "level" : 0
+	// });
+	// request.onsuccess = function(event) {
+	// return callback();
+	// };
+	// },
+
+	getWordCount : function(callback) { // TODO: add language
 		var transaction = this.db.transaction("words", "readonly");
 		var wordStore = transaction.objectStore("words");
 		var count = 0;
@@ -160,12 +165,22 @@ var indexeddao = {
 		};
 	},
 
-	getWord : function(word, callback) {
+	getWord : function(language, word, callback) {
 		var transaction = this.db.transaction("words", "readonly");
 		var wordStore = transaction.objectStore("words");
-		var request = wordStore.get(word);
-		request.onsuccess = function() {
-			callback(word, request.result);
+		var keyRange = IDBKeyRange.only(word);
+		var index = wordStore.index("word");
+		index.openCursor(keyRange).onsuccess = function(event) {
+			var result = event.target.result;
+			if (result) {
+				if (result.value.language == language) {
+					callback(word, result.value.level);
+				} else {
+					result["continue"]();
+				}
+			} else {
+				callback(word, 0);
+			}
 		};
 	},
 
@@ -176,7 +191,7 @@ var indexeddao = {
 		wordStore.openCursor().onsuccess = function(event) {
 			var result = event.target.result;
 			if (count++ == index) {
-				callback(result.key);
+				callback(result.value.word);
 			} else if (!result) {
 				callback(null);
 			} else {
@@ -192,10 +207,7 @@ var indexeddao = {
 		wordStore.openCursor().onsuccess = function(event) {
 			var cursor = event.target.result;
 			if (cursor) {
-				words.push({
-					"word" : cursor.key,
-					"level" : cursor.value
-				});
+				words.push(cursor.value);
 				cursor["continue"]();
 			} else {
 				callback(words);
@@ -203,12 +215,38 @@ var indexeddao = {
 		};
 	},
 
-	updateWord : function(word, value, callback) {
+	saveWord : function(language, word, level, callback) {
 		var transaction = this.db.transaction("words", "readwrite");
 		var wordStore = transaction.objectStore("words");
-		var request = wordStore.put(value, word);
-		request.onsuccess = function(event) {
-			return callback();
+		var keyRange = IDBKeyRange.only(word);
+		var index = wordStore.index("word");
+		index.openCursor(keyRange).onsuccess = function(event) {
+			var cursor = event.target.result;
+			if (cursor) {
+				var result = cursor.value;
+				if (result.language == language) {
+					result.level = level;
+					wordStore.put(result);
+					callback();
+				} else {
+					cursor["continue"]();
+				}
+			} else {
+				wordStore.put({
+					"language" : language,
+					"word" : word,
+					"level" : level
+				});
+				callback();
+			}
+		};
+	},
+
+	deleteWord : function(id, callback) {
+		var transaction = this.db.transaction("words", "readwrite");
+		var wordStore = transaction.objectStore("words");
+		wordStore["delete"](id).onsuccess = function(event) {
+			callback();
 		};
 	},
 
@@ -226,10 +264,10 @@ var indexeddao = {
 		var settingsStore = transaction.objectStore("settings");
 		var settings = {};
 		settingsStore.openCursor().onsuccess = function(event) {
-			var cursor = event.target.result;
-			if (cursor) {
-				settings[cursor.key] = cursor.value;
-				cursor["continue"]();
+			var result = event.target.result;
+			if (result) {
+				settings[result.key] = result.value;
+				result["continue"]();
 			} else {
 				callback(settings);
 			}
