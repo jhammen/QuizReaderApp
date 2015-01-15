@@ -305,12 +305,14 @@ $(document).delegate("#read", "pageinit", function() {
 		else if (page.chunks.length) {
 			makeNextQuiz();
 			if (page.defWords.length) {
-				expandBubbleArea();
 				$("#def_div").show();
+				$("#quiz_div").hide();
+				expandBubbleArea();
 				nextDefinition();
 			} else if (page.quizzes.length) {
-				expandBubbleArea();
 				$("#quiz_div").show();
+				$("#def_div").hide();
+				expandBubbleArea();
 				nextQuiz();
 			} else {
 				showElements();
