@@ -150,15 +150,17 @@ var indexeddao = {
 	// };
 	// },
 
-	getWordCount : function(callback) { // TODO: add language
+	getWordCount : function(language, callback) {
 		var transaction = this.db.transaction("words", "readonly");
 		var wordStore = transaction.objectStore("words");
 		var count = 0;
 		wordStore.openCursor().onsuccess = function(event) {
-			var result = event.target.result;
-			if (result) {
-				++count;
-				result["continue"]();
+			var cursor = event.target.result;
+			if (cursor) {
+				if (cursor.value.language == language) {
+					count++;
+				}
+				cursor["continue"]();
 			} else {
 				callback(count);
 			}

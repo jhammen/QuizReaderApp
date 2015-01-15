@@ -399,7 +399,9 @@ $(document).delegate("#read", "pageinit", function() {
 
 		getDao(function(dao) {
 			qr.dao = dao;
-			quizmanager.init(dao, function() {
+			quizmanager.init(qr.language, dao, function(count) {
+				$(".wordcount").text(count);
+				qr.wordcount = count;
 				settingsmanager.init(dao, function() {
 					dao.getTitle(resource, function(title) {
 						if (title) {

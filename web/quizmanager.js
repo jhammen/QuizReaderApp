@@ -20,11 +20,11 @@ var quizmanager = (function() {
 	var wordDao;
 	var wordCount;
 
-	function init(dao, callback) {
+	function init(language, dao, callback) {
 		wordDao = dao;
-		dao.getWordCount(function(count) {
+		dao.getWordCount(language, function(count) {
 			wordCount = count;
-			callback();
+			callback(count);
 		});
 	}
 
