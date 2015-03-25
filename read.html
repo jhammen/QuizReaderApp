@@ -1,23 +1,100 @@
 <!doctype html>
+<!--  
+ This file is part of QuizReader.
+
+ QuizReader is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+
+ QuizReader is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with QuizReader.  If not, see <http://www.gnu.org/licenses/>.
+-->
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>QuizReader</title>
 <link rel="stylesheet" href="web/jquery/jquery.mobile-1.4.5.css">
+<link rel="stylesheet" href="web/quizreader.css">
 <script src="web/jquery/jquery-2.1.1.js"></script>
 <script src="web/jquery/jquery.mobile-1.4.5.js"></script>
+<script src="./web/handlebars.js"></script>
+<script src="./web/dao.js"></script>
+<script src="./web/quizmanager.js"></script>
+<script src="./web/settingsmanager.js"></script>
+<script src="js/read.js"></script>
 </head>
 <body>
-	<div data-role="page" id="page1">
+	<div data-role="page" id="read">
+		<script id="def_template" type="text/x-handlebars-template">
+		<b>{{word}}</b>
+		<ul>
+			{{#each definitions}}
+			<li><i>{{type}}</i> {{text}}</li>
+			{{else}}
+			[No definition available]
+			{{/each}}
+		</ul>
+		</script>
+
 		<div data-role="header">
+			<a href="#settings" data-icon="gear" class="ui-btn-left">Settings</a>
 			<h1>QuizReader</h1>
+			<a href="#" class="wordcount ui-btn-right"></a>
 		</div>
-		<div role="main" class="ui-content">
-			<p>Load content here.</p>
+
+		<div data-role="content" class="full">
+			<div id="text"></div>
+			<div id="bubble_div">
+				<div id="def_div"></div>
+				<div id="quiz_div">
+					<form>
+						<fieldset id="quiz_set" data-role="controlgroup">
+							<legend>
+								<i id="quiz_def"></i>
+							</legend>
+							<!-- 1 -->
+							<input name="quiz" id="answer1" value="1" type="radio"><label
+								for="answer1"></label>
+							<!-- 2 -->
+							<input name="quiz" id="answer2" value="2" type="radio"><label
+								for="answer2"></label>
+							<!-- 3 -->
+							<input name="quiz" id="answer3" value="3" type="radio"><label
+								for="answer3"></label>
+						</fieldset>
+					</form>
+				</div>
+			</div>
+			<input type="button" id="more_button" value="More">
 		</div>
-		<div data-role="footer">
-			<h1></h1>
+
+		<script id="popup_def_template" type="text/x-handlebars-template">
+		<ul>
+			{{#each definitions}}
+			<li><i>{{type}}</i> {{text}}</li>
+			{{else}}
+			[No definition available]
+			{{/each}}
+		</ul>
+		</script>
+		<div data-role="popup" id="popup_def" data-arrow="t">
+			<div data-role="tabs">
+				<div data-role="navbar">
+					<ul>
+						<li><a id="popup_word1" href="#popup_def1">One</a></li>
+						<li><a id="popup_word2" href="#popup_def2">Two</a></li>
+					</ul>
+				</div>
+				<div id="popup_def1"></div>
+				<div id="popup_def2"></div>
+			</div>
 		</div>
 	</div>
 </body>

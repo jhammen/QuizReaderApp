@@ -4,9 +4,11 @@
 <script src="./dao.js"></script>
 <script src="./handlebars.js"></script>
 <script>
-	var language = "fr";
-	Handlebars.registerHelper("libpath", function() {
-		return "/quizreader" + language + "/";
+
+	Handlebars.registerHelper("libpath", function(resource, options) {
+		var path = resource.substring(3);
+		var language = resource.substring(0, 2);
+		return "/quizreader" + language + "/" + path;
 	});
 
 	$(document).ready(function() {
@@ -16,6 +18,15 @@
 				var source = $("#title_template").html();
 				var template = Handlebars.compile(source);
 				$("#title_table").html(template(data));
+				$("#title_table input").on('click', function(e) {
+					var path = $(e.target).data("path");
+					if (confirm("confirm delete " + path)) {
+						dao.deleteTitle(path, function() {
+							// remove row
+							$(e.target.parentElement.parentElement).remove();
+						});
+					}
+				});
 			});
 			dao.getAllSettings(function(data) {
 				var source = $("#settings_template").html();
@@ -23,20 +34,32 @@
 				$("#settings_table").html(template(data));
 			});
 			dao.getAllWords(function(data) {
+				console.log(data)
 				data.sort();
 				var source = $("#word_template").html();
 				var template = Handlebars.compile(source);
 				$("#word_table").html(template(data));
-			});			
+				$("#word_table input").on('click', function(e) {
+					var id = $(e.target).data("id");
+					if (confirm("confirm delete " + id)) {
+						dao.deleteWord(id, function() {
+							// remove row
+							$(e.target.parentElement.parentElement).remove();
+						});
+					}
+				});				
+			});
 		});
 	});
 </script>
 </head>
 <body>
-	<h2>Open Titles</h2>
-	<script id="title_template" type="text/x-handlebars-template">
+  <h2>Open Titles</h2>
+  <script id="title_template" type="text/x-handlebars-template">
 			<tr>
 				<th></th>
+				<th>Active</th>
+				<th>Path</th>
 				<th>Title</th>
 				<th>Author</th>
 				<th>Section</th>
@@ -44,38 +67,44 @@
 			</tr>
 			{{#.}}
 			<tr>
-				<td><img width="32" height="32" src="{{libpath}}{{path}}/cover.png"></td>
+				<td><img width="32" height="32" src="{{libpath path}}/cover.png"></td>
+				<td>{{active}}</td>
+				<td>{{path}}</td>
 				<td>{{title}}</td>
 				<td>{{author}}</td>
 				<td>{{section}}</td>
 				<td>{{element}}</td>
+				<td><input data-path="{{path}}" type="button" value="X"/>
 			</tr>
 			{{else}}
  				<td>No Open Titles</td>		
 			{{/.}}
 		</script>
-	<table id="title_table"></table>
-	
-	<h2>Settings</h2>
-	<script id="settings_template" type="text/x-handlebars-template">
+  <table id="title_table"></table>
+
+  <h2>Settings</h2>
+  <script id="settings_template" type="text/x-handlebars-template">
 			{{#each .}}
 			{{@key}}: {{this}}
 			{{/each}}
 		</script>
-	<div id="settings_table"></div>
-		
-	<h2>Words</h2>
-	<script id="word_template" type="text/x-handlebars-template">
+  <div id="settings_table"></div>
+
+  <h2>Words</h2>
+  <script id="word_template" type="text/x-handlebars-template">
 			{{#.}}
 			<tr>
+				<td>{{id}}</td>
 				<td>{{word}}</td>
+				<td>{{language}}</td>
 				<td>{{level}}</td>
+				<td><input data-id="{{id}}" type="button" value="X"/>
 			</tr>
 			{{else}}
  				<td>No Words</td>		
 			{{/.}}
 		</script>
-	<table id="word_table"></table>
-	
+  <table id="word_table"></table>
+
 </body>
 </html>
