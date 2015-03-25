@@ -15,6 +15,10 @@
  along with QuizReader.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+var page = {
+		source : null, // TODO: source and listname may not be the same
+		language : null
+}
 	
 function getUrlSearch() {
 	var loc = window.location.search;    
@@ -44,16 +48,16 @@ function getWordlistUrl(lang, listname) {
 	return "/qr" + lang + "/lst/" + listname + ".json";
 }
 
-function showWord(language, list) {
+function showWord(list) {	
 	// clear def
 	$("#def_elem").text("");
 	// pick a new word	
 	var word = list[Math.floor(Math.random() * list.length)];
 	$("#word_elem").text(word);
 	setTimeout(function() {
-		$.getJSON(getDefinitionUrl(language, word)).done(function(entry) {
-			var def = entry.definitions[0];
-			$("#def_elem").text(def ? def.text : "[definition not found]");
+		$.getJSON(getDefinitionUrl(page.language, word)).done(function(record) {
+			var def = record[page.source][0];
+			$("#def_elem").text(def ? def.x : "[definition not found]");
 			setTimeout(function() {
 				showWord(list);
 			}, 3000);
@@ -69,11 +73,11 @@ $(document).ready(function() {
 	getDao(function(dao) {
 		// get url search parameters
 		var params = getUrlSearch();
-		var listname = params.s;
-		var language = getLanguage(params);
+		page.source = params.s;
+		page.language = getLanguage(params);
 		// load the wordlist
-		$.getJSON(getWordlistUrl(language, listname)).done(function(list) {
-			showWord(language, list);
+		$.getJSON(getWordlistUrl(page.language, page.source)).done(function(list) {
+			showWord(list);
 		});
 	});
 });
