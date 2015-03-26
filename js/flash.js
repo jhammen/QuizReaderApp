@@ -41,11 +41,11 @@ function getLanguage(param) {
 
 function getDefinitionUrl(lang, word) { // TODO: def manager
 	var prefix = word.length > 1 ? word.substring(0, 2) : word[0];
-	return "/qr" + lang + "/def/en/" + prefix + "/" + word + ".json";
+	return "/" + lang + "/def/en/" + prefix + "/" + word + ".json";
 }
 
 function getWordlistUrl(lang, listname) {	
-	return "/qr" + lang + "/lst/" + listname + ".json";
+	return "/" + lang + "/lst/" + listname + ".json";
 }
 
 function showWord(list) {	
