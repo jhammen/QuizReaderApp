@@ -15,11 +15,14 @@
  along with QuizReader.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/**
+ * Flash page: requires dao, DefinitionManager
+ */
 var page = {
 		source : null, // TODO: source and listname may not be the same
 		language : null
 }
-	
+
 function getUrlSearch() {
 	var loc = window.location.search;    
 	var reg = /[?&]?([^=]+)=([^&]*)/g;
@@ -39,11 +42,6 @@ function getLanguage(param) {
 	}
 }
 
-function getDefinitionUrl(lang, word) { // TODO: def manager
-	var prefix = word.length > 1 ? word.substring(0, 2) : word[0];
-	return "/" + lang + "/def/en/" + prefix + "/" + word + ".json";
-}
-
 function getWordlistUrl(lang, listname) {	
 	return "/" + lang + "/lst/" + listname + ".json";
 }
@@ -55,7 +53,7 @@ function showWord(list) {
 	var word = list[Math.floor(Math.random() * list.length)];
 	$("#word_elem").text(word);
 	setTimeout(function() {
-		$.getJSON(getDefinitionUrl(page.language, word)).done(function(record) {
+		DefinitionManager.get(page.language, word, function(record) {
 			var def = record[page.source][0];
 			$("#def_elem").text(def ? def.x : "[definition not found]");
 			setTimeout(function() {
